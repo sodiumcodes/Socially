@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import api from '../api';
+import { supabase } from '../lib/supabaseClient';
+import { useAuth } from './AuthContext';
 
 const PostContext = createContext();
 
@@ -7,173 +8,218 @@ export const usePosts = () => useContext(PostContext);
 
 export const PostProvider = ({ children }) => {
   const [posts, setPosts] = useState([]);
-
-  // Trigger for other components (like Profile) to refresh their data
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const { user } = useAuth();
+  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
 
+  // Fetch Feed from Supabase
   const fetchFeed = async () => {
     try {
-      const res = await api.get('/api/posts/feed');
-      const responseData = res.data;
+      // Fetch posts with author info, like counts, and comment counts
+      // Note: Supabase join queries can be tricky for counts. 
+      // For simplicity in this step, we fetch posts + profiles, then we might need separate counts or a view later.
+      // But let's try a robust query.
       
-      const mappedPosts = (responseData.data || []).map(p => ({
-        id: p.id,
-        author: {
-          id: p.user_id,
-          name: p.user_name,
-          avatar: p.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.user_name)}&background=random`
-        },
-        content: p.content,
-        image: p.image_url,
-        likes: p.like_count,
-        isLiked: p.is_liked,
-        comments: [], // Comments are not returned by feed API, only count
-        commentCount: p.comment_count,
-        shares: 0,
-        timestamp: new Date(p.created_at).toLocaleDateString(), // Simple date for now
-        visibility: p.visibility === 'campus' ? 'Campus Only' : 'Public',
-        category: p.category
-      }));
+      const { data, error } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          profiles:user_id (id, full_name, avatar_url),
+          likes (user_id),
+          comments (id)
+        `)
+        .order('created_at', { ascending: false });
 
-      setPosts(mappedPosts); 
-      setRefreshTrigger(prev => prev + 1); // Notify listeners
+      if (error) throw error;
+
+      const mappedPosts = data.map(p => {
+        const isLiked = user ? p.likes.some(like => like.user_id === user.id) : false;
+        
+        return {
+          id: p.id,
+          author: {
+            id: p.profiles?.id,
+            name: p.profiles?.full_name || 'Unknown',
+            avatar: p.profiles?.avatar_url
+          },
+          content: p.content,
+          image: p.image_url,
+          likes: p.likes.length,
+          isLiked: isLiked,
+          comments: [], // We load actual comments on demand usually, or could pre-fetch
+          commentCount: p.comments.length,
+          shares: 0, 
+          timestamp: new Date(p.created_at).toLocaleDateString(),
+          visibility: p.visibility === 'campus' ? 'Campus Only' : 'Public',
+          category: p.category
+        };
+      });
+
+      setPosts(mappedPosts);
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      console.error('Error fetching feed:', error);
+    }
+  };
+
+  const createPost = async (payload) => {
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .insert({
+          user_id: user.id,
+          content: payload.content,
+          image_url: payload.image, // Assuming payload has 'image' url
+          visibility: payload.visibility || 'public',
+          category: payload.category || 'general'
+        });
+
+      if (error) throw error;
+      
+      fetchFeed();
+      setIsCreatePostOpen(false);
     } catch (err) {
-      if (err.response?.status === 401) {
-        console.error("Unauthorized - Please login");
-      }
-      console.error("Failed to fetch feed:", err);
-      setPosts([]);
+      console.error('Create post failed:', err);
+      throw err;
     }
   };
 
   const toggleLike = async (postId) => {
     try {
-      // Optimistic Update
+      if (!user) return;
+
+      const currentPost = posts.find(p => p.id === postId);
+      if (!currentPost) return;
+
+      const optimisticLiked = !currentPost.isLiked;
+      
+      // Optimistic UI update
       setPosts(current => current.map(p => {
         if (p.id === postId) {
-          const isLiked = !p.isLiked;
           return {
             ...p,
-            isLiked,
-            likes: isLiked ? p.likes + 1 : p.likes - 1
+            isLiked: optimisticLiked,
+            likes: optimisticLiked ? p.likes + 1 : p.likes - 1
           };
         }
         return p;
       }));
 
-      await api.post(`/api/likes/${postId}`);
+      if (optimisticLiked) {
+        await supabase.from('likes').insert({ user_id: user.id, post_id: postId });
+      } else {
+        await supabase.from('likes').delete().match({ user_id: user.id, post_id: postId });
+      }
+      
+      // Background refresh to ensure consistency
+      // fetchFeed(); 
     } catch (err) {
-      console.error("Like failed", err);
-      fetchFeed(); // Revert on error
+      console.error('Like failed:', err);
+      fetchFeed(); // Revert
     }
   };
 
   const addComment = async (postId, text, parentId = null) => {
     try {
-        // Optimistic update (simplified)
-        // Ideally we should wait for response for meaningful ID if we want to reply immediately, 
-        // but for now we just push.
-        
-        await api.post(`/api/comments/${postId}`, { text, parentId });
-        
-        // Background fetch to get real comment with server timestamp/ID
-        fetchComments(postId);
-
+      // Insert comment
+      const { error } = await supabase
+        .from('comments')
+        .insert({
+          user_id: user.id,
+          post_id: postId,
+          parent_id: parentId,
+          text: text
+        });
+      
+      if (error) throw error;
+      
+      // Refresh comments for this post
+      fetchComments(postId);
+      // Also updates feed comment count if we refreshed whole feed, but let's just do comments for now
     } catch (err) {
-        console.error("Comment failed", err);
+      console.error('Add comment failed:', err);
     }
   };
 
   const fetchComments = async (postId) => {
-      try {
-          const res = await api.get(`/api/comments/${postId}`);
-          const data = res.data;
-          
-          setPosts(current => current.map(p => {
-              if (p.id === postId) {
-                  return {
-                      ...p,
-                      comments: data.map(c => ({
-                          id: c.id,
-                          user: c.name,
-                          userId: c.user_id, // For ownership check
-                          avatar: c.avatar_url,
-                          text: c.text,
-                          parentId: c.parent_id,
-                          time: new Date(c.created_at).toLocaleDateString() + ' ' + new Date(c.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-                      })),
-                      commentCount: data.length
-                  };
-              }
-              return p;
-          }));
-      } catch (err) {}
-  };
-
-  const editComment = async (commentId, postId, text) => {
-      try {
-          await api.put(`/api/comments/${commentId}`, { text });
-          fetchComments(postId);
-      } catch (err) { console.error(err); }
-  };
-
-  const deleteComment = async (commentId, postId) => {
-      try {
-          await api.delete(`/api/comments/${commentId}`);
-          fetchComments(postId);
-      } catch (err) { console.error(err); }
-  };
-
-  const deletePost = async (postId) => {
-      try {
-          await api.delete(`/api/posts/${postId}`);
-          setPosts(current => current.filter(p => p.id !== postId));
-          setRefreshTrigger(prev => prev + 1); // Refresh profile counts
-      } catch (err) { console.error(err); }
-  };
-
-  const createPost = async (payload) => {
     try {
-        await api.post('/api/posts', payload);
-        setRefreshTrigger(prev => prev + 1); // Force immediate refresh of profile/feed
-        fetchFeed();
+      const { data, error } = await supabase
+        .from('comments')
+        .select(`
+          *,
+          profiles:user_id (full_name, avatar_url)
+        `)
+        .eq('post_id', postId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      const mappedComments = data.map(c => ({
+        id: c.id,
+        user: c.profiles?.full_name || 'Unknown',
+        userId: c.user_id,
+        avatar: c.profiles?.avatar_url,
+        text: c.text,
+        parentId: c.parent_id,
+        time: new Date(c.created_at).toLocaleDateString()
+      }));
+
+      setPosts(current => current.map(p => {
+        if (p.id === postId) {
+          return {
+            ...p,
+            comments: mappedComments,
+            commentCount: mappedComments.length
+          };
+        }
+        return p;
+      }));
+
     } catch (err) {
-        throw new Error(err.response?.data?.error || 'Failed to create post');
+      console.error('Fetch comments failed:', err);
     }
   };
 
-  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
+  const deletePost = async (postId) => {
+    try {
+      const { error } = await supabase.from('posts').delete().eq('id', postId);
+      if (error) throw error;
+      setPosts(prev => prev.filter(p => p.id !== postId));
+    } catch (err) {
+      console.error('Delete post failed:', err);
+    }
+  };
+
+  // Placeholder functions for now
+  const editComment = async () => {};
+  const deleteComment = async () => {};
+  const reportPost = async () => {};
 
   const openCreatePost = () => setIsCreatePostOpen(true);
   const closeCreatePost = () => setIsCreatePostOpen(false);
 
-  const reportPost = async (postId, reason) => {
-    try {
-      await api.post(`/api/reports/${postId}`, { reason });
-    } catch (err) {
-      console.error("Report failed", err);
-    }
-  };
-
   useEffect(() => {
+    // Initial fetch
     fetchFeed();
-  }, []);
+
+    // Ideally subscribe to realtime updates here too
+  }, [user]);
 
   return (
-    <PostContext.Provider value={{ 
-      posts, 
-      createPost, 
-      toggleLike, 
-      addComment, 
-      editComment,
-      deleteComment,
+    <PostContext.Provider value={{
+      posts,
+      createPost,
+      toggleLike,
+      addComment,
+      editComment, // not impl yet
+      deleteComment, // not impl yet
+      reportPost, // not impl yet
       fetchComments,
       deletePost,
-      reportPost,
       isCreatePostOpen,
       openCreatePost,
       closeCreatePost,
-      refreshTrigger // Expose for Profile
+      refreshTrigger
     }}>
       {children}
     </PostContext.Provider>

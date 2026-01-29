@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layout, ArrowRight, Loader2, Sparkles, Mail, Lock, User } from 'lucide-react';
-import api from '../api';
+import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
@@ -17,7 +17,6 @@ const Login = () => {
     password: ''
   });
   
-  const { login } = useAuth();
   const [error, setError] = useState('');
 
   const handleChange = (e) => {
@@ -31,25 +30,42 @@ const Login = () => {
     setError('');
 
     try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-      const payload = isLogin 
-        ? { email: formData.email, password: formData.password }
-        : { name: formData.name, email: formData.email, password: formData.password };
+      if (isLogin) {
+        // LOGIN logic
+        const { error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+        
+        if (error) throw error;
+        // Navigation happens automatically or we can force it, but let's wait for the auth listener
+        navigate('/feed'); 
+        
+      } else {
+        // REGISTER logic
+        const { error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              full_name: formData.name,
+              name: formData.name // keeping both for compatibility
+            }
+          }
+        });
 
-      const res = await api.post(endpoint, payload);
-      
-      if (res.data.token) {
-        // Use context login function
-        login(res.data.token, res.data.user);
-        navigate('/feed');
-      } else if (res.data.message && !isLogin) {
-        // Registration successful
+        if (error) throw error;
+
+        // If email confirmation is enabled, we might need to alert the user.
+        // For now, assuming auto-confirm or just letting them know.
         setIsLogin(true);
         setFormData({ ...formData, password: '' });
         alert('Registration successful! Please login.');
       }
+
     } catch (err) {
-      setError(err.response?.data?.error || 'Something went wrong. Please try again.');
+      console.error(err);
+      setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -1,19 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import api from '../api';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import { MapPin, Calendar, Link as LinkIcon, ShieldCheck, Edit3, X, Check, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import PostCard from '../components/PostCard';
-import { usePosts } from '../context/PostContext'; // for actions like like/comment
+import { usePosts } from '../context/PostContext';
+import { supabase } from '../lib/supabaseClient';
 
 const Profile = () => {
   const { id } = useParams();
-  const { user: currentUser, updateUser } = useAuth(); // Get logged-in user and updater
-  const { toggleLike, addComment, fetchComments, refreshTrigger } = usePosts(); // Actions
+  const { user: currentUser } = useAuth(); // Get logged-in user
+  const { toggleLike, addComment, fetchComments, refreshTrigger } = usePosts(); 
   const [profile, setProfile] = useState(null);
-  const [posts, setPosts] = useState([]); // User's posts
+  const [posts, setPosts] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -21,54 +21,82 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     bio: '',
-    avatar_url: '',
+    // avatar_url: '', // Handled separately via file upload usually
     username: '',
-    batch_year: '',
+    batch: '',
     campus: 'Bengaluru',
-    department: 'SOT'
+    branch: 'SOT'
   });
   const [avatarFile, setAvatarFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
-  const fileInputRef = React.useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchProfileAndPosts = async () => {
+      if (!id) return;
+      setLoading(true);
       try {
-        const [resProfile, resPosts] = await Promise.all([
-           api.get(`/api/users/${id}`),
-           api.get(`/api/posts/user/${id}`)
-        ]);
+        // 1. Fetch Profile
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', id)
+          .single();
 
-        setProfile(resProfile.data);
-        const mappedPosts = resPosts.data.map(p => ({
-            id: p.id,
-            author: {
-              name: p.user_name,
-              avatar: p.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.user_name)}&background=random`
-            },
-            content: p.content,
-            image: p.image_url,
-            likes: p.like_count,
-            isLiked: p.is_liked,
-            comments: [], 
-            commentCount: p.comment_count,
-            shares: 0,
-            timestamp: new Date(p.created_at).toLocaleDateString(),
-            visibility: p.visibility === 'campus' ? 'Campus Only' : 'Public',
-            category: p.category
-        }));
+        if (profileError) throw profileError;
+        if (!profileData) throw new Error("User not found");
+
+        setProfile(profileData);
+
+        // 2. Fetch User's Posts
+        const { data: postsData, error: postsError } = await supabase
+          .from('posts')
+          .select(`
+            *,
+            profiles:user_id (id, full_name, avatar_url),
+            likes (user_id),
+            comments (id)
+          `)
+          .eq('user_id', id)
+          .order('created_at', { ascending: false });
+
+        if (postsError) throw postsError;
+
+        const mappedPosts = postsData.map(p => {
+             const isLiked = currentUser ? p.likes.some(like => like.user_id === currentUser.id) : false;
+             return {
+                id: p.id,
+                author: {
+                    id: p.profiles?.id,
+                    name: p.profiles?.full_name || 'Unknown',
+                    avatar: p.profiles?.avatar_url
+                },
+                content: p.content,
+                image: p.image_url,
+                likes: p.likes.length,
+                isLiked: isLiked,
+                comments: [], 
+                commentCount: p.comments.length,
+                shares: 0,
+                timestamp: new Date(p.created_at).toLocaleDateString(),
+                visibility: p.visibility === 'campus' ? 'Campus Only' : 'Public',
+                category: p.category
+             };
+        });
+
         setPosts(mappedPosts);
 
+        // Initialize Edit Form
         setEditForm({
-            bio: resProfile.data.bio || '',
-            avatar_url: resProfile.data.avatar_url || '',
-            username: resProfile.data.username || '',
-            batch_year: resProfile.data.batch_year || '',
-            campus: resProfile.data.campus || 'Bengaluru',
-            department: resProfile.data.department || 'SOT'
+            bio: profileData.bio || '',
+            username: profileData.username || '',
+            batch: profileData.batch || '',
+            campus: profileData.campus || 'Bengaluru',
+            branch: profileData.branch || 'SOT' // Adjusted to match DB column name 'branch' vs 'department'
         });
+
       } catch (err) {
-        console.error(err);
+        console.error("Profile fetch error:", err);
         setError('User not found');
       } finally {
         setLoading(false);
@@ -76,7 +104,7 @@ const Profile = () => {
     };
 
     fetchProfileAndPosts();
-  }, [id, refreshTrigger]);
+  }, [id, refreshTrigger, currentUser]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -88,29 +116,31 @@ const Profile = () => {
 
   const handleSave = async () => {
       try {
-          const formData = new FormData();
-          Object.keys(editForm).forEach(key => {
-             formData.append(key, editForm[key]);
-          });
-          
-          if (avatarFile) {
-              formData.append('avatar', avatarFile);
-          }
+          // TODO: Helper to upload avatar if changed
+          let newAvatarUrl = profile.avatar_url;
 
-          const res = await api.put('/api/auth/me', formData);
-          
-          setProfile({ ...profile, ...res.data.user });
-          
-          // Verify if we are updating our own profile, then update context
-          if (currentUser && currentUser.id === profile.id) {
-             updateUser(res.data.user);
-          }
+          // Update Profile in Supabase
+          const updates = {
+              username: editForm.username,
+              bio: editForm.bio,
+              campus: editForm.campus,
+              batch: editForm.batch,
+              branch: editForm.branch,
+              updated_at: new Date(),
+          };
 
+          const { error } = await supabase
+              .from('profiles')
+              .update(updates)
+              .eq('id', currentUser.id);
+
+          if (error) throw error;
+          
+          setProfile(prev => ({ ...prev, ...updates }));
           setIsEditing(false);
-          // Cleanup preview url
-          if (previewUrl) URL.revokeObjectURL(previewUrl);
+          
       } catch (err) {
-          console.error(err);
+          console.error("Update failed:", err);
           alert('Failed to update profile');
       }
   };
@@ -151,8 +181,8 @@ const Profile = () => {
                  <div className="absolute -top-16 left-8 group/avatar">
                     <div className="p-1.5 bg-white rounded-full relative">
                        <img 
-                          src={previewUrl || profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=random`} 
-                          alt={profile.name}
+                          src={previewUrl || profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.full_name)}&background=random`} 
+                          alt={profile.full_name}
                           className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md bg-slate-50"
                        />
                        
@@ -209,34 +239,25 @@ const Profile = () => {
                  {/* User Info */}
                  <div className="mt-4">
                     <div className="flex items-center gap-2 mb-1">
-                       <h1 className="text-2xl font-black text-slate-900">{profile.name}</h1>
+                       <h1 className="text-2xl font-black text-slate-900">{profile.full_name}</h1>
                        <ShieldCheck className="w-5 h-5 text-indigo-500" />
                        <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-wider border border-indigo-100">
-                          {profile.role}
+                          STUDENT
                        </span>
                     </div>
-                    {profile.username && <p className="text-sm font-bold text-slate-400 mb-2">@{profile.username}</p>}
+                    {/* Username (if we have it, profiles table might not have username initially) */}
+                    {profile.email && <p className="text-sm font-bold text-slate-400 mb-2">{profile.email}</p>}
                     
                     {isEditing ? (
                         <div className="space-y-4 max-w-lg mb-6">
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-xs font-bold text-slate-400 uppercase">Username</label>
-                                    <input 
-                                        type="text" 
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-medium focus:outline-none focus:border-indigo-500"
-                                        value={editForm.username}
-                                        onChange={e => setEditForm({...editForm, username: e.target.value})}
-                                        placeholder="@username"
-                                    />
-                                </div>
                                 <div className="relative group">
                                     <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Batch Year</label>
                                     <div className="relative">
                                         <select 
                                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-indigo-500 appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
-                                            value={editForm.batch_year}
-                                            onChange={e => setEditForm({...editForm, batch_year: e.target.value})}
+                                            value={editForm.batch}
+                                            onChange={e => setEditForm({...editForm, batch: e.target.value})}
                                         >
                                             <option value="" disabled>Select Year</option>
                                             {['2023', '2024', '2025'].map(year => (
@@ -273,8 +294,8 @@ const Profile = () => {
                                     <div className="relative">
                                         <select 
                                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-indigo-500 appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
-                                            value={editForm.department}
-                                            onChange={e => setEditForm({...editForm, department: e.target.value})}
+                                            value={editForm.branch}
+                                            onChange={e => setEditForm({...editForm, branch: e.target.value})}
                                         >
                                             {['SOT', 'SOM', 'SOH'].map(d => (
                                                 <option key={d} value={d}>{d}</option>
@@ -285,21 +306,6 @@ const Profile = () => {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div>
-
-                            <div>
-                                <label className="text-xs font-bold text-slate-400 uppercase">Profile Picture</label>
-                                <div className="flex gap-2">
-                                <button 
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="w-full bg-slate-50 border border-slate-200 border-dashed rounded-xl px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:border-indigo-400 transition-colors text-left"
-                                >
-                                    {avatarFile ? avatarFile.name : "Click to upload new picture"}
-                                </button>
-                                </div>
-                            </div>
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-slate-400 uppercase">Bio</label>
@@ -322,16 +328,16 @@ const Profile = () => {
                           <MapPin className="w-4 h-4" />
                           <span>{profile.campus || 'Campus Not Set'}</span>
                        </div>
-                       {profile.department && (
+                       {profile.branch && (
                            <div className="flex items-center gap-1.5">
                                <ShieldCheck className="w-4 h-4" />
-                               <span>{profile.department}</span>
+                               <span>{profile.branch}</span>
                            </div>
                        )}
-                       {profile.batch_year && (
+                       {profile.batch && (
                            <div className="flex items-center gap-1.5">
                                <Calendar className="w-4 h-4" />
-                               <span>Batch of {profile.batch_year}</span>
+                               <span>Batch of {profile.batch}</span>
                            </div>
                        )}
                        <div className="flex items-center gap-1.5 hover:text-indigo-500 transition-colors cursor-pointer">
@@ -348,7 +354,7 @@ const Profile = () => {
                  {/* Stats */}
                  <div className="flex items-center gap-8 mt-8 border-t border-slate-100 pt-6">
                     <div className="text-center">
-                       <div className="text-xl font-black text-slate-900">{profile.post_count || 0}</div>
+                       <div className="text-xl font-black text-slate-900">{posts.length}</div>
                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Posts</div>
                     </div>
                     <div className="text-center">
@@ -363,7 +369,6 @@ const Profile = () => {
               </div>
            </div>
 
-           {/* Placeholder for User's Posts */}
            {/* User's Posts */}
            {posts.length > 0 ? (
                <div className="space-y-6">
@@ -374,7 +379,6 @@ const Profile = () => {
                            addComment={addComment}
                            toggleLike={toggleLike}
                            fetchComments={fetchComments}
-                           // setShowReport={...} // Add if needed
                        />
                    ))}
                </div>
@@ -384,7 +388,7 @@ const Profile = () => {
                      <Calendar className="w-8 h-8" />
                   </div>
                   <h3 className="text-lg font-bold text-slate-900 mb-1">No posts yet</h3>
-                  <p className="text-slate-400 text-sm">When {profile.name} posts, you'll see it here.</p>
+                  <p className="text-slate-400 text-sm">When {profile.full_name} posts, you'll see it here.</p>
                </div>
            )}
         </main>
