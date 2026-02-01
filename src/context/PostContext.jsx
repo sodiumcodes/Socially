@@ -126,6 +126,7 @@ export const PostProvider = ({ children }) => {
     }
   };
 
+  
   const toggleLike = async (postId) => {
     try {
       if (!user) return;
