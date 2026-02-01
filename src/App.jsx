@@ -13,18 +13,18 @@ function App() {
   return (
     <AuthProvider>
       <PostProvider>
-        <Router>
+        <Router basename={import.meta.env.BASE_URL}>
           <Routes>
             <Route path="/login" element={<Login />} />
-            
+
             <Route path="/feed" element={
               <ProtectedRoute>
                 <Feed />
               </ProtectedRoute>
             } />
-            
+
             <Route path="/" element={<Navigate to="/feed" replace />} />
-            
+
             {/* Placeholder routes for others using Feed for now until created */}
             <Route path="/network" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
             <Route path="/jobs" element={<ProtectedRoute><Feed /></ProtectedRoute>} />

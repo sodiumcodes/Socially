@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: "/Socially/",
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
@@ -11,7 +12,6 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
-        base: "/Socially-semproject/"
       },
     },
   },
