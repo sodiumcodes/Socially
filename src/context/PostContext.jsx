@@ -19,7 +19,7 @@ export const PostProvider = ({ children }) => {
       // Note: Supabase join queries can be tricky for counts. 
       // For simplicity in this step, we fetch posts + profiles, then we might need separate counts or a view later.
       // But let's try a robust query.
-      
+
       const { data, error } = await supabase
         .from('posts')
         .select(`
@@ -34,7 +34,7 @@ export const PostProvider = ({ children }) => {
 
       const mappedPosts = data.map(p => {
         const isLiked = user ? p.likes.some(like => like.user_id === user.id) : false;
-        
+
         return {
           id: p.id,
           author: {
@@ -48,7 +48,7 @@ export const PostProvider = ({ children }) => {
           isLiked: isLiked,
           comments: [], // We load actual comments on demand usually, or could pre-fetch
           commentCount: p.comments.length,
-          shares: 0, 
+          shares: 0,
           timestamp: new Date(p.created_at).toLocaleDateString(),
           visibility: p.visibility === 'campus' ? 'Campus Only' : 'Public',
           category: p.category
@@ -64,18 +64,60 @@ export const PostProvider = ({ children }) => {
 
   const createPost = async (payload) => {
     try {
+      let content = '';
+      let imageFile = null;
+      let visibility = 'public';
+      let category = 'general';
+
+      // Handle FormData or plain object
+      if (payload instanceof FormData) {
+        content = payload.get('content');
+        imageFile = payload.get('image');
+        visibility = payload.get('visibility') || 'public';
+        category = payload.get('category') || 'general';
+      } else {
+        content = payload.content;
+        imageFile = payload.image;
+        visibility = payload.visibility || 'public';
+        category = payload.category || 'general';
+      }
+
+      let image_url = null;
+
+      // Handle Image Upload if file exists
+      if (imageFile && typeof imageFile !== 'string') {
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
+
+        const { error: uploadError, data } = await supabase.storage
+          .from('post-images')
+          .upload(filePath, imageFile);
+
+        if (uploadError) throw uploadError;
+
+        // Get Public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('post-images')
+          .getPublicUrl(filePath);
+
+        image_url = publicUrl;
+      } else if (typeof imageFile === 'string') {
+        image_url = imageFile;
+      }
+
       const { error } = await supabase
         .from('posts')
         .insert({
           user_id: user.id,
-          content: payload.content,
-          image_url: payload.image, // Assuming payload has 'image' url
-          visibility: payload.visibility || 'public',
-          category: payload.category || 'general'
+          content: content,
+          image_url: image_url,
+          visibility: visibility,
+          category: category
         });
 
       if (error) throw error;
-      
+
       fetchFeed();
       setIsCreatePostOpen(false);
     } catch (err) {
@@ -92,7 +134,7 @@ export const PostProvider = ({ children }) => {
       if (!currentPost) return;
 
       const optimisticLiked = !currentPost.isLiked;
-      
+
       // Optimistic UI update
       setPosts(current => current.map(p => {
         if (p.id === postId) {
@@ -110,7 +152,7 @@ export const PostProvider = ({ children }) => {
       } else {
         await supabase.from('likes').delete().match({ user_id: user.id, post_id: postId });
       }
-      
+
       // Background refresh to ensure consistency
       // fetchFeed(); 
     } catch (err) {
@@ -130,9 +172,9 @@ export const PostProvider = ({ children }) => {
           parent_id: parentId,
           text: text
         });
-      
+
       if (error) throw error;
-      
+
       // Refresh comments for this post
       fetchComments(postId);
       // Also updates feed comment count if we refreshed whole feed, but let's just do comments for now
@@ -191,9 +233,9 @@ export const PostProvider = ({ children }) => {
   };
 
   // Placeholder functions for now
-  const editComment = async () => {};
-  const deleteComment = async () => {};
-  const reportPost = async () => {};
+  const editComment = async () => { };
+  const deleteComment = async () => { };
+  const reportPost = async () => { };
 
   const openCreatePost = () => setIsCreatePostOpen(true);
   const closeCreatePost = () => setIsCreatePostOpen(false);
