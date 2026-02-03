@@ -23,4 +23,4 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: dist
-          branch: gh-pages # The script pushes the build output here for you automatically
+          branch: main # The script pushes the build output here for you automatically
