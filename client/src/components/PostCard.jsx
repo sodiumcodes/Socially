@@ -268,11 +268,6 @@ const CommentItem = ({ comment, user, onReply, onEdit, onDelete, level = 0 }) =>
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(comment.text);
 
-  const handleSave = () => {
-    onEdit(comment.id, null, editText);
-    setIsEditing(false);
-  };
-
   return (
     <div className={`flex flex-col gap-2 ${level > 0 ? 'ml-5 relative' : ''}`}>
       {level > 0 && <div className="absolute -left-3.5 top-0 w-3.5 h-4 border-l-2 border-b-2 border-slate-200 rounded-bl-xl" />}
