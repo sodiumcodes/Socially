@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Layout, ArrowRight, Loader2, Sparkles, Mail, Lock, User } from 'lucide-react';
+import { Layout, ArrowRight, Loader2, Sparkles, Mail, Lock, User, GraduationCap, MapPin, Building2, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,13 +10,16 @@ const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: ''
+    password: '',
+    batch: '',
+    campus: '',
+    branch: ''
   });
-  
+
   const [error, setError] = useState('');
 
   const handleChange = (e) => {
@@ -36,11 +39,11 @@ const Login = () => {
           email: formData.email,
           password: formData.password,
         });
-        
+
         if (error) throw error;
         // Navigation happens automatically or we can force it, but let's wait for the auth listener
-        navigate('/feed'); 
-        
+        navigate('/feed');
+
       } else {
         // REGISTER logic
         const { error } = await supabase.auth.signUp({
@@ -49,7 +52,10 @@ const Login = () => {
           options: {
             data: {
               full_name: formData.name,
-              name: formData.name // keeping both for compatibility
+              name: formData.name, // keeping both for compatibility
+              batch: formData.batch,
+              campus: formData.campus,
+              branch: formData.branch
             }
           }
         });
@@ -81,18 +87,18 @@ const Login = () => {
       </div>
 
       <div className="w-full max-w-[1000px] grid md:grid-cols-2 bg-white/80 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-white/50 overflow-hidden relative z-10 transition-all duration-500">
-        
+
         {/* Left Side - Brand & Visuals */}
         <div className="relative hidden md:flex flex-col justify-between p-12 bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 text-white overflow-hidden group">
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
           <div className="absolute top-0 right-0 p-20 bg-white/10 rounded-full blur-[80px] group-hover:bg-white/20 transition-all duration-700"></div>
-          
+
           <div className="relative z-10">
             <div className="bg-white/20 w-fit p-3 rounded-2xl backdrop-blur-sm mb-6 border border-white/20 shadow-lg group-hover:scale-110 transition-transform duration-500">
               <Layout className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-4xl font-black tracking-tighter mb-4 leading-tight">
-              Connect.<br/>Collaborate.<br/><span className="text-indigo-200">Create.</span>
+              Connect.<br />Collaborate.<br /><span className="text-indigo-200">Create.</span>
             </h1>
             <p className="text-indigo-100 font-medium leading-relaxed max-w-sm">
               Join the exclusive campus network designed for creators, innovators, and leaders.
@@ -101,17 +107,17 @@ const Login = () => {
 
           <div className="relative z-10 p-6 bg-white/10 backdrop-blur-md rounded-3xl border border-white/10 shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
             <div className="flex items-center gap-4 mb-3">
-               <div className="flex -space-x-3">
-                  {[1,2,3].map(i => (
-                    <div key={i} className="w-8 h-8 rounded-full bg-slate-200 border-2 border-indigo-500 overflow-hidden">
-                       <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="" className="w-full h-full object-cover" />
-                    </div>
-                  ))}
-               </div>
-               <div className="text-xs font-bold">
-                 <span className="block text-xl">2.5k+</span>
-                 <span className="text-indigo-200">Students Joined</span>
-               </div>
+              <div className="flex -space-x-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="w-8 h-8 rounded-full bg-slate-200 border-2 border-indigo-500 overflow-hidden">
+                    <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="" className="w-full h-full object-cover" />
+                  </div>
+                ))}
+              </div>
+              <div className="text-xs font-bold">
+                <span className="block text-xl">2.5k+</span>
+                <span className="text-indigo-200">Students Joined</span>
+              </div>
             </div>
           </div>
         </div>
@@ -128,9 +134,9 @@ const Login = () => {
           </div>
 
           {error && (
-            <motion.div 
-               initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-               className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-bold flex items-center gap-2"
+            <motion.div
+              initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 text-xs font-bold flex items-center gap-2"
             >
               <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
               {error}
@@ -140,9 +146,9 @@ const Login = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <AnimatePresence mode="popLayout">
               {!isLogin && (
-                <motion.div 
-                  initial={{ height: 0, opacity: 0 }} 
-                  animate={{ height: 'auto', opacity: 1 }} 
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   className="overflow-hidden space-y-4"
                 >
@@ -150,8 +156,8 @@ const Login = () => {
                     <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Full Name</label>
                     <div className="relative group">
                       <User className="absolute left-4 top-3.5 w-4 h-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         name="name"
                         value={formData.name}
                         onChange={handleChange}
@@ -159,6 +165,69 @@ const Login = () => {
                         className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3 pl-11 pr-4 text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-slate-300"
                         required={!isLogin}
                       />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Batch</label>
+                      <div className="relative group">
+                        <Calendar className="absolute left-4 top-3.5 w-4 h-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                        <select
+                          name="batch"
+                          value={formData.batch}
+                          onChange={handleChange}
+                          className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3 pl-11 pr-4 text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all appearance-none cursor-pointer"
+                          required={!isLogin}
+                        >
+                          <option value="" disabled>Select Batch</option>
+                          <option value="2023">2023</option>
+                          <option value="2024">2024</option>
+                          <option value="2025">2025</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Campus</label>
+                      <div className="relative group">
+                        <MapPin className="absolute left-4 top-3.5 w-4 h-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                        <select
+                          name="campus"
+                          value={formData.campus}
+                          onChange={handleChange}
+                          className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3 pl-11 pr-4 text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all appearance-none cursor-pointer"
+                          required={!isLogin}
+                        >
+                          <option value="" disabled>Select Campus</option>
+                          <option value="Bengaluru">Bengaluru</option>
+                          <option value="Pune">Pune</option>
+                          <option value="Noida">Noida</option>
+                          <option value="Lucknow">Lucknow</option>
+                          <option value="Patna">Patna</option>
+                          <option value="Indore">Indore</option>
+                          <option value="Online">Online</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Branch</label>
+                    <div className="relative group">
+                      <Building2 className="absolute left-4 top-3.5 w-4 h-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                      <select
+                        name="branch"
+                        value={formData.branch}
+                        onChange={handleChange}
+                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3 pl-11 pr-4 text-sm font-bold text-slate-700 outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all appearance-none cursor-pointer"
+                        required={!isLogin}
+                      >
+                        <option value="" disabled>Select Branch</option>
+                        <option value="School of Technology">School of Technology</option>
+                        <option value="School of Management">School of Management</option>
+                        <option value="School of Healthcare">School of Healthcare</option>
+                      </select>
                     </div>
                   </div>
                 </motion.div>
@@ -169,8 +238,8 @@ const Login = () => {
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Email Address</label>
               <div className="relative group">
                 <Mail className="absolute left-4 top-3.5 w-4 h-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
@@ -185,8 +254,8 @@ const Login = () => {
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Password</label>
               <div className="relative group">
                 <Lock className="absolute left-4 top-3.5 w-4 h-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
-                <input 
-                  type="password" 
+                <input
+                  type="password"
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
@@ -196,9 +265,9 @@ const Login = () => {
                 />
               </div>
             </div>
-            
-            <button 
-              type="submit" 
+
+            <button
+              type="submit"
               disabled={loading}
               className="w-full bg-slate-900 text-white rounded-2xl py-4 font-bold text-sm hover:bg-indigo-600 active:scale-95 transition-all shadow-xl shadow-slate-200 hover:shadow-indigo-200 flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
             >
@@ -216,8 +285,8 @@ const Login = () => {
           <div className="mt-8 text-center">
             <p className="text-xs font-bold text-slate-400">
               {isLogin ? "Don't have an account?" : "Already have an account?"}
-              <button 
-                onClick={() => setIsLogin(!isLogin)} 
+              <button
+                onClick={() => setIsLogin(!isLogin)}
                 className="ml-2 text-indigo-600 hover:text-indigo-700 font-black underline decoration-2 decoration-indigo-200 underline-offset-2 transition-all hover:decoration-indigo-500"
               >
                 {isLogin ? 'Sign Up Now' : 'Login Here'}
@@ -226,7 +295,7 @@ const Login = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Footer safe area */}
       <div className="absolute bottom-6 text-[10px] font-bold text-slate-300 uppercase tracking-widest">
         WeShare © 2026 Campus Network
