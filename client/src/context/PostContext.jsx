@@ -293,9 +293,38 @@ export const PostProvider = ({ children }) => {
     }
   };
 
-  // Placeholder functions for now
-  const editComment = async () => { };
-  const deleteComment = async () => { };
+  const editComment = async (commentId, postId, newText) => {
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .update({ text: newText })
+        .eq('id', commentId);
+
+      if (error) throw error;
+
+      // Refresh comments for this post
+      fetchComments(postId);
+    } catch (err) {
+      console.error('Edit comment failed:', err);
+    }
+  };
+
+  const deleteComment = async (commentId, postId) => {
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .delete()
+        .eq('id', commentId);
+
+      if (error) throw error;
+
+      // Refresh comments for this post
+      fetchComments(postId);
+    } catch (err) {
+      console.error('Delete comment failed:', err);
+    }
+  };
+
   const reportPost = async () => { };
 
   const openCreatePost = () => setIsCreatePostOpen(true);
