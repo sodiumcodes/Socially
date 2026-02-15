@@ -5,7 +5,8 @@ import Sidebar from '../components/Sidebar';
 import { MapPin, Calendar, ShieldCheck, Edit3, X, Check, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import PostCard from '../components/PostCard';
-import { usePosts, normalizeVisibility } from '../context/PostContext';
+import { usePosts } from '../context/PostContext';
+import { normalizeVisibility } from '../utils/posts';
 import { supabase } from '../lib/supabaseClient';
 import { getAvatarUrl } from '../utils/avatar';
 
@@ -70,7 +71,7 @@ const Profile = () => {
                         author: {
                             id: p.profiles?.id,
                             name: p.profiles?.full_name || 'Unknown',
-                            avatar: p.profiles?.avatar_url
+                            avatar: getAvatarUrl(p.profiles?.full_name, p.profiles?.avatar_url)
                         },
                         content: p.content,
                         images: p.image_urls || [],

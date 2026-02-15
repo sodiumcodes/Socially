@@ -2,22 +2,11 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from './AuthContext';
 import { getAvatarUrl } from '../utils/avatar';
+import { normalizeVisibility } from '../utils/posts';
 const PostContext = createContext();
 
 export const usePosts = () => useContext(PostContext);
 
-// Helper to normalize visibility strings/objects
-export const normalizeVisibility = (vis) => {
-  if (!vis || vis === 'null' || vis === 'public') return null;
-  if (typeof vis === 'string') {
-    try {
-      return JSON.parse(vis);
-    } catch (e) {
-      return vis; // Return as is for legacy strings like 'campus'
-    }
-  }
-  return vis;
-};
 
 export const PostProvider = ({ children }) => {
   const [posts, setPosts] = useState([]);
@@ -63,7 +52,7 @@ export const PostProvider = ({ children }) => {
             author: {
               id: p.profiles?.id,
               name: p.profiles?.full_name || 'Anonymous User',
-              avatar: getAvatarUrl(p.profiles?.full_name)
+              avatar: getAvatarUrl(p.profiles?.full_name, p.profiles?.avatar_url)
             },
             userId: p.user_id, // Keep raw ID for ownership check
             content: p.content,
@@ -263,7 +252,7 @@ export const PostProvider = ({ children }) => {
         id: c.id,
         user: c.profiles?.full_name || 'Unknown',
         userId: c.user_id,
-        avatar: c.profiles?.avatar_url,
+        avatar: getAvatarUrl(c.profiles?.full_name, c.profiles?.avatar_url),
         text: c.text,
         parentId: c.parent_id,
         time: new Date(c.created_at).toLocaleDateString()
