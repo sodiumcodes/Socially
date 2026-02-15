@@ -4,6 +4,7 @@ import { X, Image, Globe, Lock, Users, ChevronDown, Loader2, AlertCircle, Briefc
 import EmojiPicker from 'emoji-picker-react';
 import { usePosts } from '../context/PostContext';
 import { useAuth } from '../context/AuthContext';
+import { getAvatarUrl } from '../utils/avatar';
 
 // Verification Constants
 const MIN_CONTENT_LENGTH = 10;
@@ -225,7 +226,7 @@ const CreatePostModal = () => {
 
               <div className="flex gap-3 mb-4">
                 <img
-                  src={user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=random`}
+                  src={getAvatarUrl(user)}
                   alt={user?.name}
                   className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-50 shrink-0"
                 />

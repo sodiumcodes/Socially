@@ -4,6 +4,7 @@ import { Heart, MessageCircle, Share2, Bookmark, AlertTriangle, Send, MoreHorizo
 import { useAuth } from '../context/AuthContext';
 import { usePosts } from '../context/PostContext';
 import ImageLightbox from './ImageLightbox';
+import { getAvatarUrl } from '../utils/avatar';
 
 const PostCard = ({ post, setShowReport, addComment, toggleLike, fetchComments }) => {
   const { user } = useAuth();
@@ -415,8 +416,8 @@ const CommentItem = ({ comment, user, onReply, onEdit, onDelete, level = 0 }) =>
       {level > 0 && <div className="absolute -left-3.5 top-0 w-3.5 h-4 border-l-2 border-b-2 border-slate-200 rounded-bl-xl" />}
 
       <div className="flex gap-3 group">
-        <div className="w-8 h-8 rounded-full bg-slate-200 shrink-0 overflow-hidden shadow-inner">
-          <img src={comment.avatar || `https://i.pravatar.cc/100?u=${comment.user}`} alt="" />
+        <div className="w-8 h-8 rounded-full bg-slate-900 shrink-0 overflow-hidden shadow-inner">
+          <img src={comment.avatar} alt="" />
         </div>
         <div className="flex-1 max-w-[90%]">
           <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100/50 group-hover:border-indigo-100 transition-colors">
