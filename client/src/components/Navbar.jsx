@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { 
-  Search, Bell, ChevronDown, Grid, Layout, Command, 
-  Compass, Users, Briefcase, PlusCircle, MessageCircle, User, LogOut 
+import {
+  Search, Bell, ChevronDown, Grid, Layout, Command,
+  Compass, Users, Briefcase, PlusCircle, MessageCircle, User, LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usePosts } from '../context/PostContext';
+import { getAvatarUrl } from '../utils/avatar';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -17,7 +18,7 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 z-[100] bg-white/80 backdrop-blur-xl border-b border-slate-100 px-6 py-2.5">
       <div className="max-w-[1500px] mx-auto flex items-center justify-between gap-8">
-        
+
         {/* 1. Brand Logo - Minimal & Bold */}
         <Link to="/feed" className="flex items-center gap-3 shrink-0">
           <div className="relative group cursor-pointer">
@@ -34,36 +35,36 @@ const Navbar = () => {
         {/* 2. Central Navigation - Fills the "Empty" space */}
         <div className="hidden lg:flex items-center bg-slate-100/50 p-1 rounded-2xl border border-slate-100">
           <Link to="/feed">
-            <TabItem 
-                icon={<Compass size={18} />} 
-                label="Explore" 
-                active={activeTab === 'Explore'} 
-                onClick={() => setActiveTab('Explore')} 
+            <TabItem
+              icon={<Compass size={18} />}
+              label="Explore"
+              active={activeTab === 'Explore'}
+              onClick={() => setActiveTab('Explore')}
             />
           </Link>
-          <TabItem 
-            icon={<Users size={18} />} 
-            label="Communities" 
-            active={activeTab === 'Communities'} 
-            onClick={() => setActiveTab('Communities')} 
+          <TabItem
+            icon={<Users size={18} />}
+            label="Communities"
+            active={activeTab === 'Communities'}
+            onClick={() => setActiveTab('Communities')}
           />
-          <TabItem 
-            icon={<Briefcase size={18} />} 
-            label="Collaborate" 
-            active={activeTab === 'Collaborate'} 
-            onClick={() => setActiveTab('Collaborate')} 
+          <TabItem
+            icon={<Briefcase size={18} />}
+            label="Collaborate"
+            active={activeTab === 'Collaborate'}
+            onClick={() => setActiveTab('Collaborate')}
           />
         </div>
 
         {/* 3. Search & Actions Container */}
         <div className="flex-1 flex items-center justify-end gap-4">
-          
+
           {/* Dynamic Search Bar */}
           <div className="hidden md:flex items-center bg-slate-50 px-4 py-2 rounded-xl w-full max-w-[280px] border border-transparent focus-within:border-indigo-100 focus-within:bg-white transition-all group">
             <Search className="w-4 h-4 text-slate-400 mr-2 group-focus-within:text-indigo-500" />
-            <input 
-              type="text" 
-              placeholder="Search campus..." 
+            <input
+              type="text"
+              placeholder="Search campus..."
               className="bg-transparent border-none outline-none text-xs w-full font-medium text-slate-600 placeholder:text-slate-400"
             />
           </div>
@@ -78,13 +79,13 @@ const Navbar = () => {
           {/* Profile - Sleeker & More Integrated */}
           {/* User Profile Dropdown */}
           <div className="relative pl-4 border-l border-slate-100 ml-2">
-            <button 
+            <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               className="flex items-center gap-2 group cursor-pointer"
             >
               <div className="relative">
-                <img 
-                  src={user?.user_metadata?.avatar_url || user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user_metadata?.full_name || user?.email || 'User')}&background=random`} 
+                <img
+                  src={getAvatarUrl(user)}
                   className="w-9 h-9 rounded-xl object-cover ring-2 ring-transparent group-hover:ring-indigo-100 transition-all"
                   alt="Profile"
                 />
@@ -106,8 +107,8 @@ const Navbar = () => {
                     <p className="text-sm font-black text-slate-800 truncate">{user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}</p>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{user?.role || 'Student'}</p>
                   </div>
-                  
-                  <Link 
+
+                  <Link
                     to={`/profile/${user?.id}`}
                     onClick={() => setShowProfileMenu(false)}
                     className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors"
@@ -116,10 +117,10 @@ const Navbar = () => {
                     My Profile
                   </Link>
 
-                  <button 
+                  <button
                     onClick={() => {
-                        logout();
-                        setShowProfileMenu(false);
+                      logout();
+                      setShowProfileMenu(false);
                     }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-bold text-rose-500 hover:bg-rose-50 transition-colors text-left"
                   >
@@ -139,13 +140,12 @@ const Navbar = () => {
 /* --- Refined Internal Components --- */
 
 const TabItem = ({ icon, label, active, onClick }) => (
-  <button 
+  <button
     onClick={onClick}
-    className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition-all ${
-      active 
-        ? 'bg-white text-indigo-600 shadow-sm shadow-slate-200' 
+    className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition-all ${active
+        ? 'bg-white text-indigo-600 shadow-sm shadow-slate-200'
         : 'text-slate-400 hover:text-slate-600'
-    }`}
+      }`}
   >
     {icon}
     <span className={active ? 'block' : 'hidden xl:block'}>{label}</span>
@@ -153,8 +153,8 @@ const TabItem = ({ icon, label, active, onClick }) => (
 );
 
 const NavAction = ({ icon, badge, label, hideLabel, onClick }) => (
-  <motion.button 
-    onClick={onClick} 
+  <motion.button
+    onClick={onClick}
     whileHover={{ y: -2 }}
     whileTap={{ scale: 0.9 }}
     className="p-2.5 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50/50 transition-all relative flex items-center gap-2"

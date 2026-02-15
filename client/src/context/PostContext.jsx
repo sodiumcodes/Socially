@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from './AuthContext';
-
+import { getAvatarUrl } from '../utils/avatar';
 const PostContext = createContext();
 
 export const usePosts = () => useContext(PostContext);
@@ -63,7 +63,7 @@ export const PostProvider = ({ children }) => {
             author: {
               id: p.profiles?.id,
               name: p.profiles?.full_name || 'Anonymous User',
-              avatar: p.profiles?.avatar_url
+              avatar: getAvatarUrl(p.profiles?.full_name)
             },
             userId: p.user_id, // Keep raw ID for ownership check
             content: p.content,
