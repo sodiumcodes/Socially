@@ -4,10 +4,11 @@ import { X, Image, Globe, Lock, Users, ChevronDown, Loader2, AlertCircle, Briefc
 import EmojiPicker from 'emoji-picker-react';
 import { usePosts } from '../context/PostContext';
 import { useAuth } from '../context/AuthContext';
+import { getAvatarUrl } from '../utils/avatar';
 
 // Verification Constants
 const MIN_CONTENT_LENGTH = 10;
-const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_MB = 5;
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'video/mp4'];
 
 const CreatePostModal = () => {
@@ -16,8 +17,8 @@ const CreatePostModal = () => {
 
   // Form State
   const [content, setContent] = useState('');
-  const [imageFile, setImageFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
+  const [imageFiles, setImageFiles] = useState([]); // Array of files
+  const [previewUrls, setPreviewUrls] = useState([]); // Array of preview URLs
 
   // Settings State
   const [category, setCategory] = useState('general'); // Default: General
@@ -84,8 +85,8 @@ const CreatePostModal = () => {
       if (textareaRef.current) textareaRef.current.focus();
       // Reset state on open
       setContent('');
-      setImageFile(null);
-      setPreviewUrl(null);
+      setImageFiles([]);
+      setPreviewUrls([]);
       setCategory('general');
       setSelectedBatches([]);
       setSelectedCampuses([]);
@@ -132,9 +133,14 @@ const CreatePostModal = () => {
       // Build FormData
       const formData = new FormData();
       formData.append('content', content);
-      if (imageFile) {
-        formData.append('image', imageFile);
+
+      // Append all images
+      if (imageFiles.length > 0) {
+        imageFiles.forEach((file) => {
+          formData.append('images', file);
+        });
       }
+
       formData.append('visibility', visibilityPayload ? JSON.stringify(visibilityPayload) : 'null');
       formData.append('category', category);
 
@@ -147,7 +153,9 @@ const CreatePostModal = () => {
       setSelectedCampuses([]);
       setSelectedBranches([]);
       setShowAdvancedVisibility(false);
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+
+      // Revoke all preview URLs
+      previewUrls.forEach(url => URL.revokeObjectURL(url));
 
     } catch (err) {
       setError(err.message || 'Failed to post. Please try again.');
@@ -218,7 +226,7 @@ const CreatePostModal = () => {
 
               <div className="flex gap-3 mb-4">
                 <img
-                  src={user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=random`}
+                  src={getAvatarUrl(user)}
                   alt={user?.name}
                   className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-50 shrink-0"
                 />
@@ -371,28 +379,77 @@ const CreatePostModal = () => {
                   id="post-image-upload"
                   className="hidden"
                   accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      setImageFile(file);
-                      setPreviewUrl(URL.createObjectURL(file));
+                  multiple
+                  onChange={async (e) => {
+                    const files = Array.from(e.target.files);
+
+                    // Check max limit
+                    if (imageFiles.length + files.length > 5) {
+                      setError(`Maximum 5 images allowed. You have ${imageFiles.length} and tried to add ${files.length} more.`);
+                      return;
                     }
+
+                    try {
+                      // Preserve original images (no auto-cropping)
+                      const newPreviewUrls = files.map(file => URL.createObjectURL(file));
+
+                      setImageFiles(prev => [...prev, ...files]);
+                      setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
+                      setError(''); // Clear any previous errors
+                    } catch (err) {
+                      setError('Failed to process images. Please try again.');
+                    }
+
+                    // Reset input
+                    e.target.value = '';
                   }}
                 />
               </div>
 
-              {previewUrl && (
-                <div className="relative mb-4 rounded-xl overflow-hidden group border border-slate-100">
-                  <img src={previewUrl} alt="Preview" className="w-full max-h-[300px] object-cover" />
-                  <button
-                    onClick={() => {
-                      setImageFile(null);
-                      setPreviewUrl(null);
-                    }}
-                    className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors backdrop-blur-sm"
-                  >
-                    <X size={16} />
-                  </button>
+              {previewUrls.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-slate-500">
+                      {previewUrls.length}/5 images
+                    </span>
+                    <button
+                      onClick={() => {
+                        previewUrls.forEach(url => URL.revokeObjectURL(url));
+                        setImageFiles([]);
+                        setPreviewUrls([]);
+                      }}
+                      className="text-xs font-bold text-rose-500 hover:text-rose-600"
+                    >
+                      Remove All
+                    </button>
+                  </div>
+                  <div className={`grid gap-2 ${previewUrls.length === 1 ? 'grid-cols-1' :
+                    previewUrls.length === 2 ? 'grid-cols-2' :
+                      previewUrls.length === 3 ? 'grid-cols-3' :
+                        previewUrls.length === 4 ? 'grid-cols-2' :
+                          'grid-cols-3'
+                    }`}>
+                    {previewUrls.map((url, index) => (
+                      <div key={index} className="relative rounded-xl overflow-hidden group border border-slate-100">
+                        <img
+                          src={url}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-48 object-cover"
+                          style={{ aspectRatio: '4/5' }}
+                        />
+                        <button
+                          onClick={() => {
+                            URL.revokeObjectURL(url);
+                            setImageFiles(prev => prev.filter((_, i) => i !== index));
+                            setPreviewUrls(prev => prev.filter((_, i) => i !== index));
+                          }}
+                          className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors backdrop-blur-sm opacity-0 group-hover:opacity-100"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

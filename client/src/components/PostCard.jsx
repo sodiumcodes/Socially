@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, MessageCircle, Share2, Bookmark, AlertTriangle, Send, MoreHorizontal, Users, Globe, Trash2, Edit2, CornerDownRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { usePosts } from '../context/PostContext';
+import ImageLightbox from './ImageLightbox';
+import { getAvatarUrl } from '../utils/avatar';
 
 const PostCard = ({ post, setShowReport, addComment, toggleLike, fetchComments }) => {
   const { user } = useAuth();
@@ -11,6 +13,8 @@ const PostCard = ({ post, setShowReport, addComment, toggleLike, fetchComments }
   const [commentText, setCommentText] = useState('');
   const [replyTo, setReplyTo] = useState(null); // commentId to reply to
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   const handleCreateComment = () => {
     if (!commentText.trim()) return;
@@ -155,12 +159,144 @@ const PostCard = ({ post, setShowReport, addComment, toggleLike, fetchComments }
           {post.content}
         </p>
 
-        {post.image && (
-          <div className="rounded-[2rem] overflow-hidden max-h-[500px] mb-5 border border-slate-50 relative group bg-slate-50">
-            <img src={post.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          </div>
-        )}
+
+        {/* Multiple Images Display */}
+        {(() => {
+          const images = post.images && post.images.length > 0 ? post.images : (post.image ? [post.image] : []);
+
+          if (images.length === 0) return null;
+
+          // Single image layout
+          if (images.length === 1) {
+            return (
+              <div
+                className="rounded-[2rem] overflow-hidden max-h-[500px] mb-5 border border-slate-50 relative group bg-slate-50 cursor-pointer"
+                onClick={() => { setSelectedImageIndex(0); setIsLightboxOpen(true); }}
+              >
+                <img
+                  src={images[0]}
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  alt=""
+                  style={{ aspectRatio: '4/5', maxHeight: '500px', objectFit: 'cover' }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            );
+          }
+
+          // Two images layout
+          if (images.length === 2) {
+            return (
+              <div className="grid grid-cols-2 gap-2 mb-5">
+                {images.map((img, idx) => (
+                  <div
+                    key={idx}
+                    className="rounded-2xl overflow-hidden border border-slate-50 relative group bg-slate-50 cursor-pointer"
+                    onClick={() => { setSelectedImageIndex(idx); setIsLightboxOpen(true); }}
+                  >
+                    <img
+                      src={img}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      alt=""
+                      style={{ aspectRatio: '4/5', height: '300px', objectFit: 'cover' }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                ))}
+              </div>
+            );
+          }
+
+          // Three images layout
+          if (images.length === 3) {
+            return (
+              <div className="grid grid-cols-3 gap-2 mb-5">
+                {images.map((img, idx) => (
+                  <div
+                    key={idx}
+                    className="rounded-2xl overflow-hidden border border-slate-50 relative group bg-slate-50 cursor-pointer"
+                    onClick={() => { setSelectedImageIndex(idx); setIsLightboxOpen(true); }}
+                  >
+                    <img
+                      src={img}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      alt=""
+                      style={{ aspectRatio: '4/5', height: '250px', objectFit: 'cover' }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                ))}
+              </div>
+            );
+          }
+
+          // Four images layout (2x2 grid)
+          if (images.length === 4) {
+            return (
+              <div className="grid grid-cols-2 gap-2 mb-5">
+                {images.map((img, idx) => (
+                  <div
+                    key={idx}
+                    className="rounded-2xl overflow-hidden border border-slate-50 relative group bg-slate-50 cursor-pointer"
+                    onClick={() => { setSelectedImageIndex(idx); setIsLightboxOpen(true); }}
+                  >
+                    <img
+                      src={img}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      alt=""
+                      style={{ aspectRatio: '4/5', height: '250px', objectFit: 'cover' }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                ))}
+              </div>
+            );
+          }
+
+          // Five images layout (2 + 3 grid)
+          if (images.length === 5) {
+            return (
+              <div className="space-y-2 mb-5">
+                <div className="grid grid-cols-2 gap-2">
+                  {images.slice(0, 2).map((img, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-2xl overflow-hidden border border-slate-50 relative group bg-slate-50 cursor-pointer"
+                      onClick={() => { setSelectedImageIndex(idx); setIsLightboxOpen(true); }}
+                    >
+                      <img
+                        src={img}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        alt=""
+                        style={{ aspectRatio: '4/5', height: '200px', objectFit: 'cover' }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {images.slice(2, 5).map((img, idx) => (
+                    <div
+                      key={idx + 2}
+                      className="rounded-2xl overflow-hidden border border-slate-50 relative group bg-slate-50 cursor-pointer"
+                      onClick={() => { setSelectedImageIndex(idx + 2); setIsLightboxOpen(true); }}
+                    >
+                      <img
+                        src={img}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        alt=""
+                        style={{ aspectRatio: '4/5', height: '200px', objectFit: 'cover' }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+
+          return null;
+        })()}
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1 bg-slate-50/50 p-1 rounded-2xl border border-slate-100/50">
@@ -259,6 +395,13 @@ const PostCard = ({ post, setShowReport, addComment, toggleLike, fetchComments }
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ImageLightbox
+        isOpen={isLightboxOpen}
+        images={post.images && post.images.length > 0 ? post.images : (post.image ? [post.image] : [])}
+        initialIndex={selectedImageIndex}
+        onClose={() => setIsLightboxOpen(false)}
+      />
     </motion.div>
   );
 };
@@ -268,18 +411,13 @@ const CommentItem = ({ comment, user, onReply, onEdit, onDelete, level = 0 }) =>
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(comment.text);
 
-  const handleSave = () => {
-    onEdit(comment.id, null, editText);
-    setIsEditing(false);
-  };
-
   return (
     <div className={`flex flex-col gap-2 ${level > 0 ? 'ml-5 relative' : ''}`}>
       {level > 0 && <div className="absolute -left-3.5 top-0 w-3.5 h-4 border-l-2 border-b-2 border-slate-200 rounded-bl-xl" />}
 
       <div className="flex gap-3 group">
-        <div className="w-8 h-8 rounded-full bg-slate-200 shrink-0 overflow-hidden shadow-inner">
-          <img src={comment.avatar || `https://i.pravatar.cc/100?u=${comment.user}`} alt="" />
+        <div className="w-8 h-8 rounded-full bg-slate-900 shrink-0 overflow-hidden shadow-inner">
+          <img src={comment.avatar} alt="" />
         </div>
         <div className="flex-1 max-w-[90%]">
           <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100/50 group-hover:border-indigo-100 transition-colors">

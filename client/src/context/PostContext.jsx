@@ -1,23 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from './AuthContext';
-
+import { getAvatarUrl } from '../utils/avatar';
+import { normalizeVisibility } from '../utils/posts';
 const PostContext = createContext();
 
 export const usePosts = () => useContext(PostContext);
 
-// Helper to normalize visibility strings/objects
-const normalizeVisibility = (vis) => {
-  if (!vis || vis === 'null' || vis === 'public') return null;
-  if (typeof vis === 'string') {
-    try {
-      return JSON.parse(vis);
-    } catch (e) {
-      return vis; // Return as is for legacy strings like 'campus'
-    }
-  }
-  return vis;
-};
 
 export const PostProvider = ({ children }) => {
   const [posts, setPosts] = useState([]);
@@ -63,11 +52,12 @@ export const PostProvider = ({ children }) => {
             author: {
               id: p.profiles?.id,
               name: p.profiles?.full_name || 'Anonymous User',
-              avatar: p.profiles?.avatar_url
+              avatar: getAvatarUrl(p.profiles?.full_name, p.profiles?.avatar_url)
             },
             userId: p.user_id, // Keep raw ID for ownership check
             content: p.content,
-            image: p.image_url,
+            images: p.image_urls || [], // Array of image URLs
+            image: p.image_url, // Backward compatibility for old posts
             likes: p.likes.length,
             isLiked: isLiked,
             comments: [],
@@ -117,42 +107,43 @@ export const PostProvider = ({ children }) => {
 
   const createPost = async (payload) => {
     try {
-      let content, imageFile, visibility, category;
+      let content, imageFiles, visibility, category;
 
       // Handle FormData or Object (Robust Check for Production)
       if (payload && typeof payload.get === 'function') {
         content = payload.get('content');
-        imageFile = payload.get('image');
+        imageFiles = payload.getAll('images'); // Get all images
         visibility = payload.get('visibility');
         category = payload.get('category');
       } else {
         // Fallback for direct object usage if any
         content = payload.content;
-        imageFile = payload.image; // Assume this might be a file or url
+        imageFiles = payload.images || []; // Assume this might be an array of files
         visibility = payload.visibility;
         category = payload.category;
       }
 
-      let imageUrl = null;
+      const imageUrls = [];
 
-      // Upload Image if present and is a File
-      if (imageFile && imageFile instanceof File) {
-        const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from('posts')
-          .upload(fileName, imageFile);
+      // Upload multiple images if present
+      if (imageFiles && imageFiles.length > 0) {
+        for (const imageFile of imageFiles) {
+          if (imageFile && imageFile instanceof File) {
+            const fileExt = imageFile.name.split('.').pop();
+            const fileName = `${user.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const { error: uploadError } = await supabase.storage
+              .from('posts')
+              .upload(fileName, imageFile);
 
-        if (uploadError) throw uploadError;
+            if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('posts')
-          .getPublicUrl(fileName);
+            const { data: { publicUrl } } = supabase.storage
+              .from('posts')
+              .getPublicUrl(fileName);
 
-        imageUrl = publicUrl;
-      } else if (typeof imageFile === 'string') {
-        // If it's already a string (URL), usage it
-        imageUrl = imageFile;
+            imageUrls.push(publicUrl);
+          }
+        }
       }
 
       // Safe Visibility Parsing
@@ -170,7 +161,7 @@ export const PostProvider = ({ children }) => {
         .insert({
           user_id: user.id,
           content: content,
-          image_url: imageUrl,
+          image_urls: imageUrls, // Store array of URLs
           visibility: finalVisibility || null,
           category: category || 'general'
         });
@@ -261,7 +252,7 @@ export const PostProvider = ({ children }) => {
         id: c.id,
         user: c.profiles?.full_name || 'Unknown',
         userId: c.user_id,
-        avatar: c.profiles?.avatar_url,
+        avatar: getAvatarUrl(c.profiles?.full_name, c.profiles?.avatar_url),
         text: c.text,
         parentId: c.parent_id,
         time: new Date(c.created_at).toLocaleDateString()
@@ -293,9 +284,38 @@ export const PostProvider = ({ children }) => {
     }
   };
 
-  // Placeholder functions for now
-  const editComment = async () => { };
-  const deleteComment = async () => { };
+  const editComment = async (commentId, postId, newText) => {
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .update({ text: newText })
+        .eq('id', commentId);
+
+      if (error) throw error;
+
+      // Refresh comments for this post
+      fetchComments(postId);
+    } catch (err) {
+      console.error('Edit comment failed:', err);
+    }
+  };
+
+  const deleteComment = async (commentId, postId) => {
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .delete()
+        .eq('id', commentId);
+
+      if (error) throw error;
+
+      // Refresh comments for this post
+      fetchComments(postId);
+    } catch (err) {
+      console.error('Delete comment failed:', err);
+    }
+  };
+
   const reportPost = async () => { };
 
   const openCreatePost = () => setIsCreatePostOpen(true);
