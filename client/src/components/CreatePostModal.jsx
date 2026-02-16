@@ -34,6 +34,11 @@ const CreatePostModal = () => {
   const [selectedCampuses, setSelectedCampuses] = useState([]);
   const [selectedBranches, setSelectedBranches] = useState([]);
 
+  // Temp State (Buffered for Visibility Panel)
+  const [tempBatches, setTempBatches] = useState([]);
+  const [tempCampuses, setTempCampuses] = useState([]);
+  const [tempBranches, setTempBranches] = useState([]);
+
   // UI Toggles
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showAdvancedVisibility, setShowAdvancedVisibility] = useState(false);
@@ -72,12 +77,16 @@ const CreatePostModal = () => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (visibilityMenuRef.current && !visibilityMenuRef.current.contains(event.target)) {
-        setShowAdvancedVisibility(false);
+        // If filters are selected in temp state, don't close
+        const hasFilters = tempBatches.length > 0 || tempCampuses.length > 0 || tempBranches.length > 0;
+        if (!hasFilters) {
+          setShowAdvancedVisibility(false);
+        }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [tempBatches, tempCampuses, tempBranches]); // Add dependencies
 
   // Focus and Reset
   useEffect(() => {
@@ -91,6 +100,9 @@ const CreatePostModal = () => {
       setSelectedBatches([]);
       setSelectedCampuses([]);
       setSelectedBranches([]);
+      setTempBatches([]);
+      setTempCampuses([]);
+      setTempBranches([]);
       setError('');
       setIsSubmitting(false); // Reset submitting state when modal opens
     }
@@ -99,11 +111,21 @@ const CreatePostModal = () => {
   // Handle ESC key
   useEffect(() => {
     const handleEsc = (e) => {
-      if (e.key === 'Escape') closeCreatePost();
+      if (e.key === 'Escape') {
+        const hasFilters = tempBatches.length > 0 || tempCampuses.length > 0 || tempBranches.length > 0;
+        if (showAdvancedVisibility && hasFilters) return;
+        closeCreatePost();
+      }
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [closeCreatePost]);
+  }, [closeCreatePost, showAdvancedVisibility, tempBatches, tempCampuses, tempBranches]);
+
+  const handleGuardedClose = () => {
+    const hasFilters = tempBatches.length > 0 || tempCampuses.length > 0 || tempBranches.length > 0;
+    if (showAdvancedVisibility && hasFilters) return;
+    closeCreatePost();
+  };
 
 
   const handleSubmit = async (e) => {
@@ -185,7 +207,7 @@ const CreatePostModal = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={closeCreatePost}
+            onClick={handleGuardedClose}
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
           />
 
@@ -202,7 +224,7 @@ const CreatePostModal = () => {
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white sticky top-0 z-10 shrink-0">
               <h2 className="text-lg font-bold text-slate-800">Create Post</h2>
               <button
-                onClick={closeCreatePost}
+                onClick={handleGuardedClose}
                 className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-colors"
                 aria-label="Close modal"
               >
@@ -238,7 +260,19 @@ const CreatePostModal = () => {
                     {/* Visibility Main Selector */}
                     <div className="relative" ref={visibilityMenuRef}>
                       <button
-                        onClick={() => setShowAdvancedVisibility(!showAdvancedVisibility)}
+                        onClick={() => {
+                          if (showAdvancedVisibility) {
+                            // If trying to close via button, check for filters
+                            const hasFilters = tempBatches.length > 0 || tempCampuses.length > 0 || tempBranches.length > 0;
+                            if (hasFilters) return;
+                          } else {
+                            // Sync temp state with main state when opening
+                            setTempBatches([...selectedBatches]);
+                            setTempCampuses([...selectedCampuses]);
+                            setTempBranches([...selectedBranches]);
+                          }
+                          setShowAdvancedVisibility(!showAdvancedVisibility);
+                        }}
                         className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-all border ${showAdvancedVisibility ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'text-slate-500 bg-slate-100/80 border-transparent hover:border-slate-200'
                           }`}
                       >
@@ -255,6 +289,23 @@ const CreatePostModal = () => {
                             className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-slate-100 p-4 z-50 origin-top-left"
                           >
                             <div className="space-y-4">
+                              {/* Header with Clear All */}
+                              <div className="flex justify-between items-center pb-2 border-b border-slate-50">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Filters</span>
+                                {(tempBatches.length > 0 || tempCampuses.length > 0 || tempBranches.length > 0) && (
+                                  <button
+                                    onClick={() => {
+                                      setTempBatches([]);
+                                      setTempCampuses([]);
+                                      setTempBranches([]);
+                                    }}
+                                    className="text-[10px] font-black text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-tight"
+                                  >
+                                    Clear All
+                                  </button>
+                                )}
+                              </div>
+
                               {/* Audience Configuration Panel */}
                               <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-200">
 
@@ -262,16 +313,16 @@ const CreatePostModal = () => {
                                 <div>
                                   <div className="flex justify-between items-center mb-2">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Batches</label>
-                                    <button onClick={() => toggleAll(BATCHES, selectedBatches, setSelectedBatches)} className="text-[9px] font-bold text-indigo-600 hover:underline">
-                                      {selectedBatches.length === BATCHES.length ? 'Clear' : 'Select All'}
+                                    <button onClick={() => toggleAll(BATCHES, tempBatches, setTempBatches)} className="text-[9px] font-bold text-indigo-600 hover:underline">
+                                      {tempBatches.length === BATCHES.length ? 'Clear' : 'Select All'}
                                     </button>
                                   </div>
                                   <div className="flex flex-wrap gap-1.5">
                                     {BATCHES.map(batch => (
                                       <button
                                         key={batch}
-                                        onClick={() => toggleSelection(batch, selectedBatches, setSelectedBatches)}
-                                        className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-all ${selectedBatches.includes(batch) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-200'}`}
+                                        onClick={() => toggleSelection(batch, tempBatches, setTempBatches)}
+                                        className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-all ${tempBatches.includes(batch) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-200'}`}
                                       >
                                         {batch}
                                       </button>
@@ -283,16 +334,16 @@ const CreatePostModal = () => {
                                 <div>
                                   <div className="flex justify-between items-center mb-2">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Campuses</label>
-                                    <button onClick={() => toggleAll(CAMPUSES, selectedCampuses, setSelectedCampuses)} className="text-[9px] font-bold text-indigo-600 hover:underline">
-                                      {selectedCampuses.length === CAMPUSES.length ? 'Clear' : 'Select All'}
+                                    <button onClick={() => toggleAll(CAMPUSES, tempCampuses, setTempCampuses)} className="text-[9px] font-bold text-indigo-600 hover:underline">
+                                      {tempCampuses.length === CAMPUSES.length ? 'Clear' : 'Select All'}
                                     </button>
                                   </div>
                                   <div className="flex flex-wrap gap-1.5">
                                     {CAMPUSES.map(campus => (
                                       <button
                                         key={campus}
-                                        onClick={() => toggleSelection(campus, selectedCampuses, setSelectedCampuses)}
-                                        className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-all ${selectedCampuses.includes(campus) ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-slate-500 border-slate-200 hover:border-teal-200'}`}
+                                        onClick={() => toggleSelection(campus, tempCampuses, setTempCampuses)}
+                                        className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-all ${tempCampuses.includes(campus) ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-slate-500 border-slate-200 hover:border-teal-200'}`}
                                       >
                                         {campus}
                                       </button>
@@ -304,16 +355,16 @@ const CreatePostModal = () => {
                                 <div>
                                   <div className="flex justify-between items-center mb-2">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Branches</label>
-                                    <button onClick={() => toggleAll(BRANCHES, selectedBranches, setSelectedBranches)} className="text-[9px] font-bold text-indigo-600 hover:underline">
-                                      {selectedBranches.length === BRANCHES.length ? 'Clear' : 'Select All'}
+                                    <button onClick={() => toggleAll(BRANCHES, tempBranches, setTempBranches)} className="text-[9px] font-bold text-indigo-600 hover:underline">
+                                      {tempBranches.length === BRANCHES.length ? 'Clear' : 'Select All'}
                                     </button>
                                   </div>
                                   <div className="flex flex-col gap-1.5">
                                     {BRANCHES.map(branch => (
                                       <button
                                         key={branch}
-                                        onClick={() => toggleSelection(branch, selectedBranches, setSelectedBranches)}
-                                        className={`px-2 py-1.5 rounded-md text-[10px] font-bold border text-left transition-all ${selectedBranches.includes(branch) ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-slate-500 border-slate-200 hover:border-orange-200'}`}
+                                        onClick={() => toggleSelection(branch, tempBranches, setTempBranches)}
+                                        className={`px-2 py-1.5 rounded-md text-[10px] font-bold border text-left transition-all ${tempBranches.includes(branch) ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-slate-500 border-slate-200 hover:border-orange-200'}`}
                                       >
                                         {branch}
                                       </button>
@@ -321,6 +372,39 @@ const CreatePostModal = () => {
                                   </div>
                                 </div>
 
+                              </div>
+
+                              {/* Footer Submit Button */}
+                              <div className="pt-4 border-t border-slate-100 flex justify-end">
+                                <button
+                                  onClick={() => {
+                                    setSelectedBatches(tempBatches);
+                                    setSelectedCampuses(tempCampuses);
+                                    setSelectedBranches(tempBranches);
+                                    setShowAdvancedVisibility(false);
+                                  }}
+                                  disabled={
+                                    tempBatches.length === selectedBatches.length &&
+                                    tempCampuses.length === selectedCampuses.length &&
+                                    tempBranches.length === selectedBranches.length &&
+                                    tempBatches.every(v => selectedBatches.includes(v)) &&
+                                    tempCampuses.every(v => selectedCampuses.includes(v)) &&
+                                    tempBranches.every(v => selectedBranches.includes(v))
+                                  }
+                                  className={`w-full py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${!(
+                                    tempBatches.length === selectedBatches.length &&
+                                    tempCampuses.length === selectedCampuses.length &&
+                                    tempBranches.length === selectedBranches.length &&
+                                    tempBatches.every(v => selectedBatches.includes(v)) &&
+                                    tempCampuses.every(v => selectedCampuses.includes(v)) &&
+                                    tempBranches.every(v => selectedBranches.includes(v))
+                                  )
+                                    ? 'bg-slate-900 text-white hover:bg-slate-800 shadow-lg'
+                                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                    }`}
+                                >
+                                  Submit
+                                </button>
                               </div>
                             </div>
                           </motion.div>
