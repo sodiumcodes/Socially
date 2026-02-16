@@ -4,6 +4,7 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login';
 import Feed from './pages/Feed';
 import Profile from './pages/Profile';
+import ProfileDemo from './pages/ProfileDemo';
 import { PostProvider } from './context/PostContext';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -35,6 +36,9 @@ function App() {
                 <Profile />
               </ProtectedRoute>
             } />
+
+            {/* Profile Demo Page - No Authentication Required */}
+            <Route path="/profile-demo" element={<ProfileDemo />} />
 
             <Route path="/profile" element={<Navigate to="/feed" replace />} />
 
