@@ -4,7 +4,7 @@ import {
   ChevronDown, LayoutGrid, Bookmark, Star, Settings, Bell,
   Sparkles, ShieldCheck, Zap
 } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import { getAvatarUrl } from '../utils/avatar';
@@ -12,6 +12,7 @@ import { getAvatarUrl } from '../utils/avatar';
 const Sidebar = () => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const menuItems = [
     { icon: LayoutGrid, label: 'Feed', path: '/feed' },
@@ -69,8 +70,8 @@ const Sidebar = () => {
                   <Link
                     to={item.path}
                     className={`w-full flex items-center justify-between px-4 py-2.5 rounded-2xl transition-all duration-500 group relative ${isActive
-                        ? 'text-indigo-600'
-                        : 'text-slate-500 hover:text-slate-900'
+                      ? 'text-indigo-600'
+                      : 'text-slate-500 hover:text-slate-900'
                       }`}
                   >
                     {isActive && (
@@ -121,7 +122,12 @@ const Sidebar = () => {
       <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-around">
         <NavBottomBtn icon={<Settings size={18} />} label="Settings" />
         <div className="w-[1px] h-4 bg-slate-100" />
-        <NavBottomBtn icon={<Bell size={18} />} label="Alerts" badge />
+        <NavBottomBtn
+          icon={<Bell size={18} />}
+          label="Alerts"
+          badge
+          onClick={() => navigate('/notifications')}
+        />
         <div className="w-[1px] h-4 bg-slate-100" />
         <NavBottomBtn icon={<Sparkles size={18} />} label="Themes" />
       </div>
@@ -132,8 +138,8 @@ const Sidebar = () => {
 
 /* --- Internal Premium Components --- */
 
-const NavBottomBtn = ({ icon, label, badge }) => (
-  <button className="flex flex-col items-center gap-1 group">
+const NavBottomBtn = ({ icon, label, badge, onClick }) => (
+  <button className="flex flex-col items-center gap-1 group" onClick={onClick}>
     <div className="p-2 rounded-xl text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all relative">
       {icon}
       {badge && <div className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />}

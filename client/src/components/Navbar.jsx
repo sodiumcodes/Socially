@@ -5,13 +5,14 @@ import {
   GraduationCap, Building2, MapPin, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usePosts } from '../context/PostContext';
 import { getAvatarUrl } from '../utils/avatar';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Explore');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -210,7 +211,11 @@ const Navbar = () => {
           <div className="flex items-center gap-1">
             <NavAction icon={<PlusCircle size={20} />} label="New Post" hideLabel onClick={openCreatePost} />
             <NavAction icon={<MessageCircle size={20} />} badge="3" />
-            <NavAction icon={<Bell size={20} />} badge="!" />
+            <NavAction
+              icon={<Bell size={20} />}
+              badge="!"
+              onClick={() => navigate('/notifications')}
+            />
           </div>
 
           {/* Profile - Sleeker & More Integrated */}
