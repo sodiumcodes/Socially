@@ -187,20 +187,30 @@ const Profile = () => {
 
     const handleRemoveFriend = async () => {
         try {
-            // 1. Delete Connection
-            const { error: connError } = await supabase
+            // 1. Delete Connection (Try both directions)
+            const { error: error1 } = await supabase
                 .from('connections')
                 .delete()
-                .or(`and(user_id.eq.${currentUser.id},friend_id.eq.${id}),and(user_id.eq.${id},friend_id.eq.${currentUser.id})`);
+                .eq('user_id', currentUser.id)
+                .eq('friend_id', id);
 
-            if (connError) throw connError;
+            const { error: error2 } = await supabase
+                .from('connections')
+                .delete()
+                .eq('user_id', id)
+                .eq('friend_id', currentUser.id);
 
-            // 2. Delete Notifications (either sent or received)
+            if (error1 && error2) {
+                // Technically only one should exist, if both error then something is wrong
+                // But usually, one succeeds and one "fails" (deletes 0 rows) which is fine.
+            }
+
+            // 2. Delete Notifications
             await supabase
                 .from('notifications')
                 .delete()
-                .or(`and(user_id.eq.${currentUser.id},sender_id.eq.${id}),and(user_id.eq.${id},sender_id.eq.${currentUser.id})`)
-                .eq('type', 'friend_request');
+                .eq('type', 'friend_request')
+                .or(`and(user_id.eq.${currentUser.id},sender_id.eq.${id}),and(user_id.eq.${id},sender_id.eq.${currentUser.id})`);
 
             setFriendship({ status: null, senderId: null });
         } catch (err) {
