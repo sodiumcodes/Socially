@@ -1,19 +1,54 @@
 import React, { useState } from 'react';
 import {
-  Search, Bell, ChevronDown, Grid, Layout, Command,
-  Compass, Users, Briefcase, PlusCircle, MessageCircle, User, LogOut
+  Search, Bell, ChevronDown, Grid, Layout, Command, Filter,
+  Compass, Users, Briefcase, PlusCircle, MessageCircle, User, LogOut,
+  GraduationCap, Building2, MapPin, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usePosts } from '../context/PostContext';
 import { getAvatarUrl } from '../utils/avatar';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Explore');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Search Filters State
+  const [showSearchFilters, setShowSearchFilters] = useState(false);
+  const [selectedBatches, setSelectedBatches] = useState([]);
+  const [selectedCampuses, setSelectedCampuses] = useState([]);
+  const [selectedBranches, setSelectedBranches] = useState([]);
+
   const { openCreatePost } = usePosts();
+
+  const BATCHES = ['2023', '2024', '2025'];
+  const CAMPUSES = ['Bengaluru', 'Pune', 'Noida', 'Lucknow', 'Patna', 'Indore', 'Online'];
+  const BRANCHES = ['School of Technology', 'School of Management', 'School of Health'];
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter') {
+      const params = new URLSearchParams();
+      if (searchQuery.trim()) params.append('q', searchQuery.trim());
+      if (selectedBatches.length) params.append('batch', selectedBatches.join(','));
+      if (selectedCampuses.length) params.append('campus', selectedCampuses.join(','));
+      if (selectedBranches.length) params.append('branch', selectedBranches.join(','));
+
+      navigate(`/search?${params.toString()}`);
+      setShowSearchFilters(false);
+    }
+  };
+
+  const toggleFilter = (item, currentList, setList) => {
+    if (currentList.includes(item)) {
+      setList(currentList.filter(i => i !== item));
+    } else {
+      setList([...currentList, item]);
+    }
+  };
 
   return (
     <nav className="sticky top-0 z-[100] bg-white/80 backdrop-blur-xl border-b border-slate-100 px-6 py-2.5">
@@ -60,13 +95,115 @@ const Navbar = () => {
         <div className="flex-1 flex items-center justify-end gap-4">
 
           {/* Dynamic Search Bar */}
-          <div className="hidden md:flex items-center bg-slate-50 px-4 py-2 rounded-xl w-full max-w-[280px] border border-transparent focus-within:border-indigo-100 focus-within:bg-white transition-all group">
-            <Search className="w-4 h-4 text-slate-400 mr-2 group-focus-within:text-indigo-500" />
-            <input
-              type="text"
-              placeholder="Search campus..."
-              className="bg-transparent border-none outline-none text-xs w-full font-medium text-slate-600 placeholder:text-slate-400"
-            />
+          <div className="hidden md:flex flex-col relative w-full max-w-[320px]">
+            <div className="flex items-center bg-slate-50 px-4 py-2 rounded-xl border border-transparent focus-within:border-indigo-100 focus-within:bg-white transition-all group">
+              <Search className="w-4 h-4 text-slate-400 mr-2 group-focus-within:text-indigo-500" />
+              <input
+                type="text"
+                placeholder="Search campus..."
+                className="bg-transparent border-none outline-none text-xs w-full font-medium text-slate-600 placeholder:text-slate-400"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearch}
+                onFocus={() => setShowSearchFilters(true)}
+              />
+              <button
+                onClick={() => setShowSearchFilters(!showSearchFilters)}
+                className={`p-1.5 rounded-lg transition-colors ${showSearchFilters ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-slate-100 text-slate-400'}`}
+              >
+                <Filter size={14} />
+              </button>
+            </div>
+
+            {/* Search Filters Dropdown */}
+            <AnimatePresence>
+              {showSearchFilters && (
+                <>
+                  <div
+                    className="fixed inset-0 z-[-1]"
+                    onClick={() => setShowSearchFilters(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] border border-slate-100 p-4 z-50 overflow-hidden"
+                  >
+                    <div className="flex items-center justify-between mb-4 border-b border-slate-50 pb-2">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Search Filters</span>
+                      <button onClick={() => {
+                        setSelectedBatches([]);
+                        setSelectedCampuses([]);
+                        setSelectedBranches([]);
+                      }} className="text-[9px] font-bold text-rose-500 uppercase">Clear</button>
+                    </div>
+
+                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1 scrollbar-thin">
+                      {/* Batches */}
+                      <div>
+                        <label className="flex items-center gap-2 text-[10px] font-black text-slate-900 uppercase tracking-tight mb-2">
+                          <GraduationCap size={12} className="text-indigo-500" /> Batches
+                        </label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {BATCHES.map(batch => (
+                            <button
+                              key={batch}
+                              onClick={() => toggleFilter(batch, selectedBatches, setSelectedBatches)}
+                              className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all ${selectedBatches.includes(batch) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-500 border-slate-200'}`}
+                            >
+                              {batch}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Campuses */}
+                      <div>
+                        <label className="flex items-center gap-2 text-[10px] font-black text-slate-900 uppercase tracking-tight mb-2">
+                          <MapPin size={12} className="text-emerald-500" /> Campuses
+                        </label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {CAMPUSES.map(campus => (
+                            <button
+                              key={campus}
+                              onClick={() => toggleFilter(campus, selectedCampuses, setSelectedCampuses)}
+                              className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all ${selectedCampuses.includes(campus) ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-500 border-slate-200'}`}
+                            >
+                              {campus}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Branches */}
+                      <div>
+                        <label className="flex items-center gap-2 text-[10px] font-black text-slate-900 uppercase tracking-tight mb-2">
+                          <Building2 size={12} className="text-fuchsia-500" /> Branches
+                        </label>
+                        <div className="flex flex-col gap-1.5">
+                          {BRANCHES.map(branch => (
+                            <button
+                              key={branch}
+                              onClick={() => toggleFilter(branch, selectedBranches, setSelectedBranches)}
+                              className={`px-2 py-2 rounded-lg text-[10px] font-bold border text-left transition-all ${selectedBranches.includes(branch) ? 'bg-fuchsia-600 text-white border-fuchsia-600' : 'bg-white text-slate-500 border-slate-200'}`}
+                            >
+                              {branch}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleSearch({ key: 'Enter' })}
+                      className="w-full mt-4 bg-slate-900 text-white py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
+                    >
+                      Apply Filters
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Action Icons */}
@@ -143,8 +280,8 @@ const TabItem = ({ icon, label, active, onClick }) => (
   <button
     onClick={onClick}
     className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition-all ${active
-        ? 'bg-white text-indigo-600 shadow-sm shadow-slate-200'
-        : 'text-slate-400 hover:text-slate-600'
+      ? 'bg-white text-indigo-600 shadow-sm shadow-slate-200'
+      : 'text-slate-400 hover:text-slate-600'
       }`}
   >
     {icon}
