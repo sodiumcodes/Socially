@@ -9,6 +9,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usePosts } from '../context/PostContext';
 import { getAvatarUrl } from '../utils/avatar';
+import { supabase } from '../lib/supabaseClient';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -17,6 +18,7 @@ const Navbar = () => {
   const [activeTab, setActiveTab] = useState('Explore');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Search Filters State
   const [showSearchFilters, setShowSearchFilters] = useState(false);
@@ -25,6 +27,42 @@ const Navbar = () => {
   const [selectedBranches, setSelectedBranches] = useState([]);
 
   const { openCreatePost } = usePosts();
+
+  const fetchNotificationCount = async () => {
+    if (!user) return;
+    try {
+      const { count, error } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false);
+
+      if (error) throw error;
+      setUnreadCount(count || 0);
+    } catch (err) {
+      console.error('Error fetching notification count:', err);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchNotificationCount();
+
+    const channel = supabase
+      .channel('navbar_notifications')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${user?.id}`
+      }, () => {
+        fetchNotificationCount();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const BATCHES = ['2023', '2024', '2025'];
   const CAMPUSES = ['Bengaluru', 'Pune', 'Noida', 'Lucknow', 'Patna', 'Indore', 'Online'];
@@ -213,7 +251,7 @@ const Navbar = () => {
             <NavAction icon={<MessageCircle size={20} />} badge="3" />
             <NavAction
               icon={<Bell size={20} />}
-              badge="!"
+              badge={unreadCount > 0 ? (unreadCount > 9 ? '9+' : unreadCount) : null}
               onClick={() => navigate('/notifications')}
             />
           </div>
