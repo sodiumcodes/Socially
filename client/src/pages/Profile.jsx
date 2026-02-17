@@ -9,6 +9,9 @@ import { usePosts } from '../context/PostContext';
 import { normalizeVisibility } from '../utils/posts';
 import { supabase } from '../lib/supabaseClient';
 import { getAvatarUrl } from '../utils/avatar';
+import ProfileFriendAdded from '../components/ProfileFriendAdded';
+import ProfileNotFriend from '../components/ProfileNotFriend';
+import ProfilePending from '../components/ProfilePending';
 
 const Profile = () => {
     const { id } = useParams();
@@ -18,6 +21,7 @@ const Profile = () => {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [friendship, setFriendship] = useState({ status: null, senderId: null }); // { status, senderId }
 
     // Edit Mode State
     const [isEditing, setIsEditing] = useState(false);
@@ -89,6 +93,20 @@ const Profile = () => {
 
                 setPosts(mappedPosts);
 
+                // 3. Fetch Friendship Status (if not own profile)
+                if (currentUser && currentUser.id !== id) {
+                    const { data: connectionData } = await supabase
+                        .from('connections')
+                        .select('status, user_id')
+                        .or(`and(user_id.eq.${currentUser.id},friend_id.eq.${id}),and(user_id.eq.${id},friend_id.eq.${currentUser.id})`)
+                        .maybeSingle();
+
+                    setFriendship({
+                        status: connectionData?.status || null,
+                        senderId: connectionData?.user_id || null
+                    });
+                }
+
                 // Initialize Edit Form
                 setEditForm({
                     bio: profileData.bio || '',
@@ -108,6 +126,88 @@ const Profile = () => {
 
         fetchProfileAndPosts();
     }, [id, refreshTrigger, currentUser]);
+
+    const handleAddFriend = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('connections')
+                .insert({
+                    user_id: currentUser.id,
+                    friend_id: id,
+                    status: 'pending' // Use 'pending' for initial request
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            // Send Notification
+            await supabase
+                .from('notifications')
+                .insert({
+                    user_id: id,
+                    sender_id: currentUser.id,
+                    type: 'friend_request',
+                    content: `${currentUser.user_metadata?.full_name || 'Someone'} sent you a friend request`,
+                    data: { connection_id: data.id }
+                });
+
+            setFriendship({ status: 'pending', senderId: currentUser.id });
+        } catch (err) {
+            console.error("Failed to add friend:", err);
+            alert("Failed to add friend");
+        }
+    };
+
+    const handleAcceptFriend = async () => {
+        try {
+            // 1. Update Connection
+            const { error: connError } = await supabase
+                .from('connections')
+                .update({ status: 'accepted' })
+                .eq('friend_id', currentUser.id)
+                .eq('user_id', id);
+
+            if (connError) throw connError;
+
+            // 2. Delete Notification
+            await supabase
+                .from('notifications')
+                .delete()
+                .eq('user_id', currentUser.id)
+                .eq('sender_id', id)
+                .eq('type', 'friend_request');
+
+            setFriendship(prev => ({ ...prev, status: 'accepted' }));
+        } catch (err) {
+            console.error("Failed to accept friend:", err);
+            alert("Failed to accept friend");
+        }
+    };
+
+    const handleRemoveFriend = async () => {
+        try {
+            // 1. Delete Connection
+            const { error: connError } = await supabase
+                .from('connections')
+                .delete()
+                .or(`and(user_id.eq.${currentUser.id},friend_id.eq.${id}),and(user_id.eq.${id},friend_id.eq.${currentUser.id})`);
+
+            if (connError) throw connError;
+
+            // 2. Delete Notifications (either sent or received)
+            await supabase
+                .from('notifications')
+                .delete()
+                .or(`and(user_id.eq.${currentUser.id},sender_id.eq.${id}),and(user_id.eq.${id},sender_id.eq.${currentUser.id})`)
+                .eq('type', 'friend_request');
+
+            setFriendship({ status: null, senderId: null });
+        } catch (err) {
+            console.error("Failed to remove friend:", err);
+            alert("Failed to remove friend");
+        }
+    };
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -201,6 +301,13 @@ const Profile = () => {
 
     const isOwnProfile = currentUser && profile && currentUser.id === profile.id;
 
+    // Default Friendship Logic: Same Batch and Same Branch
+    const isPeer = currentUser && profile &&
+        currentUser.user_metadata?.batch === profile.batch &&
+        currentUser.user_metadata?.branch === profile.branch;
+
+    const isFriend = friendship.status === 'accepted' || isPeer;
+
     if (loading) return (
         <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center">
             <div className="w-8 h-8 border-4 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin"></div>
@@ -214,57 +321,57 @@ const Profile = () => {
         </div>
     );
 
-    return (
-        <div className="bg-[#F1F5F9] min-h-screen text-slate-900">
-            <Navbar />
-            <div className="max-w-[1600px] mx-auto flex justify-center pt-4 px-0 lg:px-4 pb-4 gap-4">
-                <Sidebar />
+    if (isOwnProfile) {
+        return (
+            <div className="bg-[#F1F5F9] min-h-screen text-slate-900">
+                <Navbar />
+                <div className="max-w-[1600px] mx-auto flex justify-center pt-4 px-0 lg:px-4 pb-4 gap-4">
+                    <Sidebar />
 
-                {/* Main Profile Content */}
-                <main className="flex-1 max-w-4xl w-full min-w-0">
+                    {/* Main Profile Content */}
+                    <main className="flex-1 max-w-4xl w-full min-w-0">
 
-                    {/* Cover Image & Header Info */}
-                    <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden relative mb-6">
-                        {/* Cover */}
-                        <div className="h-48 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 relative">
-                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
-                        </div>
-
-                        <div className="px-8 pb-8 relative">
-                            {/* Avatar */}
-                            <div className="absolute -top-16 left-8 group/avatar">
-                                <div className="p-1.5 bg-white rounded-full relative">
-                                    <img
-                                        src={previewUrl || getAvatarUrl(profile)}
-                                        alt={profile.full_name}
-                                        className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md bg-slate-50"
-                                    />
-
-                                    {/* Overlay Camera Icon for Editing */}
-                                    {isEditing && (
-                                        <button
-                                            onClick={() => fileInputRef.current?.click()}
-                                            className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full cursor-pointer opacity-0 group-hover/avatar:opacity-100 transition-opacity"
-                                        >
-                                            <div className="bg-white/20 p-2 rounded-full backdrop-blur-sm">
-                                                <Edit3 className="text-white w-6 h-6" />
-                                            </div>
-                                        </button>
-                                    )}
-                                    <input
-                                        type="file"
-                                        ref={fileInputRef}
-                                        className="hidden"
-                                        accept="image/*"
-                                        onChange={handleFileChange}
-                                    />
-                                </div>
+                        {/* Cover Image & Header Info */}
+                        <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden relative mb-6">
+                            {/* Cover */}
+                            <div className="h-48 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 relative">
+                                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
                             </div>
 
-                            {/* Action Buttons (Right) */}
-                            <div className="flex justify-end pt-4 mb-4 gap-3">
-                                {isOwnProfile ? (
-                                    isEditing ? (
+                            <div className="px-8 pb-8 relative">
+                                {/* Avatar */}
+                                <div className="absolute -top-16 left-8 group/avatar">
+                                    <div className="p-1.5 bg-white rounded-full relative">
+                                        <img
+                                            src={previewUrl || getAvatarUrl(profile)}
+                                            alt={profile.full_name}
+                                            className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md bg-slate-50"
+                                        />
+
+                                        {/* Overlay Camera Icon for Editing */}
+                                        {isEditing && (
+                                            <button
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full cursor-pointer opacity-0 group-hover/avatar:opacity-100 transition-opacity"
+                                            >
+                                                <div className="bg-white/20 p-2 rounded-full backdrop-blur-sm">
+                                                    <Edit3 className="text-white w-6 h-6" />
+                                                </div>
+                                            </button>
+                                        )}
+                                        <input
+                                            type="file"
+                                            ref={fileInputRef}
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={handleFileChange}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Action Buttons (Right) */}
+                                <div className="flex justify-end pt-4 mb-4 gap-3">
+                                    {isEditing ? (
                                         <>
                                             <button onClick={() => setIsEditing(false)} className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50">
                                                 <X size={18} />
@@ -277,168 +384,196 @@ const Profile = () => {
                                         <button onClick={() => setIsEditing(true)} className="px-5 py-2 rounded-xl font-bold text-sm border-2 border-slate-100 text-slate-600 hover:border-slate-300 transition-colors flex items-center gap-2">
                                             <Edit3 size={16} /> Edit Profile
                                         </button>
-                                    )
-                                ) : (
-                                    <>
-                                        <button className="px-5 py-2 rounded-xl font-bold text-sm border-2 border-slate-100 text-slate-600 hover:border-slate-300 transition-colors">
-                                            Message
-                                        </button>
-                                        <button className="px-5 py-2 rounded-xl font-bold text-sm bg-slate-900 text-white hover:bg-indigo-600 shadow-lg shadow-slate-200 hover:shadow-indigo-200 transition-all">
-                                            Follow
-                                        </button>
-                                    </>
-                                )}
-                            </div>
-
-                            {/* User Info */}
-                            <div className="mt-4">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <h1 className="text-2xl font-black text-slate-900">{profile.full_name}</h1>
-                                    <ShieldCheck className="w-5 h-5 text-indigo-500" />
-                                    <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-wider border border-indigo-100">
-                                        STUDENT
-                                    </span>
-                                </div>
-                                {/* Username (if we have it, profiles table might not have username initially) */}
-
-
-                                {isEditing ? (
-                                    <div className="space-y-4 max-w-lg mb-6">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="relative group">
-                                                <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Batch Year</label>
-                                                <div className="relative">
-                                                    <select
-                                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-indigo-500 appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
-                                                        value={editForm.batch}
-                                                        onChange={e => setEditForm({ ...editForm, batch: e.target.value })}
-                                                    >
-                                                        <option value="" disabled>Select Year</option>
-                                                        {['2023', '2024', '2025'].map(year => (
-                                                            <option key={year} value={year}>{year}</option>
-                                                        ))}
-                                                    </select>
-                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                                        <ChevronDown size={14} />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="relative group">
-                                                <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Campus</label>
-                                                <div className="relative">
-                                                    <select
-                                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-indigo-500 appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
-                                                        value={editForm.campus}
-                                                        onChange={e => setEditForm({ ...editForm, campus: e.target.value })}
-                                                    >
-                                                        {['Bengaluru', 'Lucknow', 'Pune', 'Noida', 'Indore', 'Patna'].map(c => (
-                                                            <option key={c} value={c}>{c}</option>
-                                                        ))}
-                                                    </select>
-                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                                        <ChevronDown size={14} />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="relative group">
-                                                <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Department</label>
-                                                <div className="relative">
-                                                    <select
-                                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-indigo-500 appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
-                                                        value={editForm.branch}
-                                                        onChange={e => setEditForm({ ...editForm, branch: e.target.value })}
-                                                    >
-                                                        {['SOT', 'SOM', 'SOH'].map(d => (
-                                                            <option key={d} value={d}>{d}</option>
-                                                        ))}
-                                                    </select>
-                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                                        <ChevronDown size={14} />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="text-xs font-bold text-slate-400 uppercase">Bio</label>
-                                            <textarea
-                                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-medium focus:outline-none focus:border-indigo-500 min-h-[80px]"
-                                                value={editForm.bio}
-                                                onChange={e => setEditForm({ ...editForm, bio: e.target.value })}
-                                                placeholder="Tell us about yourself..."
-                                            />
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <p className="text-slate-500 font-medium mb-4 max-w-2xl">
-                                        {profile.bio || "No bio yet."}
-                                    </p>
-                                )}
-
-                                <div className="flex flex-wrap items-center gap-6 text-slate-400 text-sm font-medium">
-                                    <div className="flex items-center gap-1.5">
-                                        <MapPin className="w-4 h-4" />
-                                        <span>{profile.campus || 'Campus Not Set'}</span>
-                                    </div>
-                                    {profile.branch && (
-                                        <div className="flex items-center gap-1.5">
-                                            <ShieldCheck className="w-4 h-4" />
-                                            <span>{profile.branch}</span>
-                                        </div>
                                     )}
-                                    {profile.batch && (
-                                        <div className="flex items-center gap-1.5">
-                                            <Calendar className="w-4 h-4" />
-                                            <span>Batch of {profile.batch}</span>
+                                </div>
+
+                                {/* User Info */}
+                                <div className="mt-4">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h1 className="text-2xl font-black text-slate-900">{profile.full_name}</h1>
+                                        <ShieldCheck className="w-5 h-5 text-indigo-500" />
+                                        <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-wider border border-indigo-100">
+                                            STUDENT
+                                        </span>
+                                    </div>
+
+                                    {isEditing ? (
+                                        <div className="space-y-4 max-w-lg mb-6">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="relative group">
+                                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Batch Year</label>
+                                                    <div className="relative">
+                                                        <select
+                                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-indigo-500 appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
+                                                            value={editForm.batch}
+                                                            onChange={e => setEditForm({ ...editForm, batch: e.target.value })}
+                                                        >
+                                                            <option value="" disabled>Select Year</option>
+                                                            {['2023', '2024', '2025'].map(year => (
+                                                                <option key={year} value={year}>{year}</option>
+                                                            ))}
+                                                        </select>
+                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                            <ChevronDown size={14} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="relative group">
+                                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Campus</label>
+                                                    <div className="relative">
+                                                        <select
+                                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-indigo-500 appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
+                                                            value={editForm.campus}
+                                                            onChange={e => setEditForm({ ...editForm, campus: e.target.value })}
+                                                        >
+                                                            {['Bengaluru', 'Lucknow', 'Pune', 'Noida', 'Indore', 'Patna'].map(c => (
+                                                                <option key={c} value={c}>{c}</option>
+                                                            ))}
+                                                        </select>
+                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                            <ChevronDown size={14} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="relative group">
+                                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Department</label>
+                                                    <div className="relative">
+                                                        <select
+                                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-indigo-500 appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
+                                                            value={editForm.branch}
+                                                            onChange={e => setEditForm({ ...editForm, branch: e.target.value })}
+                                                        >
+                                                            {['SOT', 'SOM', 'SOH'].map(d => (
+                                                                <option key={d} value={d}>{d}</option>
+                                                            ))}
+                                                        </select>
+                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                            <ChevronDown size={14} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-slate-400 uppercase">Bio</label>
+                                                <textarea
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-medium focus:outline-none focus:border-indigo-500 min-h-[80px]"
+                                                    value={editForm.bio}
+                                                    onChange={e => setEditForm({ ...editForm, bio: e.target.value })}
+                                                    placeholder="Tell us about yourself..."
+                                                />
+                                            </div>
                                         </div>
+                                    ) : (
+                                        <p className="text-slate-500 font-medium mb-4 max-w-2xl">
+                                            {profile.bio || "No bio yet."}
+                                        </p>
                                     )}
 
-                                </div>
-                            </div>
+                                    <div className="flex flex-wrap items-center gap-6 text-slate-400 text-sm font-medium">
+                                        <div className="flex items-center gap-1.5">
+                                            <MapPin className="w-4 h-4" />
+                                            <span>{profile.campus || 'Campus Not Set'}</span>
+                                        </div>
+                                        {profile.branch && (
+                                            <div className="flex items-center gap-1.5">
+                                                <ShieldCheck className="w-4 h-4" />
+                                                <span>{profile.branch}</span>
+                                            </div>
+                                        )}
+                                        {profile.batch && (
+                                            <div className="flex items-center gap-1.5">
+                                                <Calendar className="w-4 h-4" />
+                                                <span>Batch of {profile.batch}</span>
+                                            </div>
+                                        )}
 
-                            {/* Stats */}
-                            <div className="flex items-center gap-8 mt-8 border-t border-slate-100 pt-6">
-                                <div className="text-center">
-                                    <div className="text-xl font-black text-slate-900">{posts.length}</div>
-                                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Posts</div>
+                                    </div>
                                 </div>
-                                <div className="text-center">
-                                    <div className="text-xl font-black text-slate-900">0</div>
-                                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Followers</div>
-                                </div>
-                                <div className="text-center">
-                                    <div className="text-xl font-black text-slate-900">0</div>
-                                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Following</div>
+
+                                {/* Stats */}
+                                <div className="flex items-center gap-8 mt-8 border-t border-slate-100 pt-6">
+                                    <div className="text-center">
+                                        <div className="text-xl font-black text-slate-900">{posts.length}</div>
+                                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Posts</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-xl font-black text-slate-900">0</div>
+                                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Followers</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-xl font-black text-slate-900">0</div>
+                                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Following</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* User's Posts */}
-                    {posts.length > 0 ? (
-                        <div className="space-y-6">
-                            {posts.map(post => (
-                                <PostCard
-                                    key={post.id}
-                                    post={post}
-                                    addComment={addComment}
-                                    toggleLike={toggleLike}
-                                    fetchComments={fetchComments}
-                                />
-                            ))}
-                        </div>
+                        {/* User's Posts */}
+                        {posts.length > 0 ? (
+                            <div className="space-y-6">
+                                {posts.map(post => (
+                                    <PostCard
+                                        key={post.id}
+                                        post={post}
+                                        addComment={addComment}
+                                        toggleLike={toggleLike}
+                                        fetchComments={fetchComments}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-white p-12 rounded-[2rem] border border-slate-100 text-center">
+                                <div className="inline-flex p-4 rounded-full bg-slate-50 mb-4 text-slate-300">
+                                    <Calendar className="w-8 h-8" />
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-900 mb-1">No posts yet</h3>
+                                <p className="text-slate-400 text-sm">When {profile.full_name} posts, you'll see it here.</p>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            </div>
+        );
+    }
+
+    // CONDITIONAL VIEWS FOR OTHER USERS
+    return (
+        <div className="bg-[#F1F5F9] min-h-screen text-slate-900">
+            <Navbar />
+            <div className="max-w-[1600px] mx-auto flex justify-center pt-4 px-0 lg:px-4 pb-4 gap-4">
+                <Sidebar />
+                <main className="flex-1 w-full min-w-0">
+                    {isFriend ? (
+                        <ProfileFriendAdded
+                            profile={profile}
+                            posts={posts}
+                            onRemoveFriend={handleRemoveFriend}
+                        />
+                    ) : friendship.status === 'pending' ? (
+                        <ProfilePending
+                            profile={profile}
+                            posts={posts}
+                            onRemoveFriend={handleRemoveFriend}
+                            isReceived={friendship.senderId !== currentUser.id}
+                            onAcceptFriend={handleAcceptFriend}
+                        />
                     ) : (
-                        <div className="bg-white p-12 rounded-[2rem] border border-slate-100 text-center">
-                            <div className="inline-flex p-4 rounded-full bg-slate-50 mb-4 text-slate-300">
-                                <Calendar className="w-8 h-8" />
-                            </div>
-                            <h3 className="text-lg font-bold text-slate-900 mb-1">No posts yet</h3>
-                            <p className="text-slate-400 text-sm">When {profile.full_name} posts, you'll see it here.</p>
-                        </div>
+                        <ProfileNotFriend
+                            profile={profile}
+                            posts={posts}
+                            onAddFriend={handleAddFriend}
+                        />
                     )}
                 </main>
+                <div className="hidden xl:block w-80 shrink-0">
+                    <div className="sticky top-20 bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
+                        <h3 className="font-black text-slate-900 mb-4">Suggested People</h3>
+                        <p className="text-xs text-slate-400 font-medium">Implement suggestions here...</p>
+                    </div>
+                </div>
             </div>
         </div>
     );
