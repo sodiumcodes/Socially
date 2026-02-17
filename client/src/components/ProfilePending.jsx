@@ -34,26 +34,13 @@ const ProfilePending = ({ profile, posts = [], onRemoveFriend, isReceived = fals
                     <div className="relative">
                         <ProfileHeader
                             profile={profile}
-                            showRemoveButton={!isReceived} // Using remove button as 'Cancel Request' for sender
+                            showRemoveButton={!isReceived}
                             isFriend={false}
                             onRemoveFriend={onRemoveFriend}
+                            isPendingReceived={isReceived}
+                            onAcceptFriend={onAcceptFriend}
+                            onDeclineFriend={onRemoveFriend}
                         />
-                        {isReceived && (
-                            <div className="absolute top-8 right-8 flex gap-3">
-                                <button
-                                    onClick={onRemoveFriend}
-                                    className="px-6 py-2.5 bg-gray-100 text-gray-600 font-semibold rounded-full hover:bg-gray-200 transition-all"
-                                >
-                                    Decline
-                                </button>
-                                <button
-                                    onClick={onAcceptFriend}
-                                    className="px-6 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold rounded-full shadow-lg hover:from-purple-600 hover:to-indigo-600 transition-all"
-                                >
-                                    Accept Request
-                                </button>
-                            </div>
-                        )}
                     </div>
 
                     {/* Status Banner */}
