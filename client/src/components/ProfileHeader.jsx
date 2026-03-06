@@ -1,8 +1,17 @@
 import React from 'react';
-import { MapPin, GraduationCap, Calendar, BadgeCheck } from 'lucide-react';
+import { MapPin, GraduationCap, Calendar, BadgeCheck, X } from 'lucide-react';
 import { getAvatarUrl } from '../utils/avatar';
 
-const ProfileHeader = ({ profile, showRemoveButton = false, isFriend = false, onAddFriend, onRemoveFriend }) => {
+const ProfileHeader = ({
+    profile,
+    showRemoveButton = false,
+    isFriend = false,
+    onAddFriend,
+    onRemoveFriend,
+    isPendingReceived = false,
+    onAcceptFriend,
+    onDeclineFriend
+}) => {
     if (!profile) return null;
 
     // Get first letters of name for fallback
@@ -82,7 +91,23 @@ const ProfileHeader = ({ profile, showRemoveButton = false, isFriend = false, on
                     </div>
 
                     {/* Right: Action Button */}
-                    {showRemoveButton ? (
+                    {isPendingReceived ? (
+                        <div className="flex items-center gap-2 mt-4">
+                            <button
+                                onClick={onDeclineFriend}
+                                className="p-2.5 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-all duration-200 shadow-sm border border-gray-200"
+                                title="Decline Friend Request"
+                            >
+                                <X size={20} fontWeight="bold" />
+                            </button>
+                            <button
+                                onClick={onAcceptFriend}
+                                className="px-6 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold rounded-full shadow-lg hover:from-purple-600 hover:to-indigo-600 transition-all duration-200"
+                            >
+                                Accept Request
+                            </button>
+                        </div>
+                    ) : showRemoveButton ? (
                         <button
                             onClick={onRemoveFriend}
                             className="mt-4 px-6 py-2.5 bg-gradient-to-r from-pink-500 to-red-500 text-white font-semibold rounded-full shadow-lg hover:from-pink-600 hover:to-red-600 transition-all duration-200"

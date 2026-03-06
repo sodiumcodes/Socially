@@ -447,9 +447,18 @@ const CommentItem = ({ comment, user, onReply, onEdit, onDelete, level = 0 }) =>
             </button>
             {isOwner && (
               <>
-                <button onClick={() => setIsEditing(!isEditing)} className="text-[9px] font-black text-slate-300 uppercase hover:text-indigo-600 transition-colors flex items-center gap-1">
-                  Edit
-                </button>
+                {(() => {
+                  const createdTime = new Date(comment.createdAt).getTime();
+                  const now = new Date().getTime();
+                  const minutesPassed = (now - createdTime) / (1000 * 60);
+                  const isEditable = minutesPassed <= 30;
+
+                  return isEditable ? (
+                    <button onClick={() => setIsEditing(!isEditing)} className="text-[9px] font-black text-slate-300 uppercase hover:text-indigo-600 transition-colors flex items-center gap-1">
+                      Edit
+                    </button>
+                  ) : null;
+                })()}
                 <button onClick={() => onDelete(comment.id)} className="text-[9px] font-black text-slate-300 uppercase hover:text-rose-500 transition-colors flex items-center gap-1">
                   Delete
                 </button>

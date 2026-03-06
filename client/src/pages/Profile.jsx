@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
-import { MapPin, Calendar, ShieldCheck, Edit3, X, Check, ChevronDown } from 'lucide-react';
+import { MapPin, Calendar, ShieldCheck, Edit3, X, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import PostCard from '../components/PostCard';
 import { usePosts } from '../context/PostContext';
@@ -27,11 +27,8 @@ const Profile = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({
         bio: '',
-        // avatar_url: '', // Handled separately via file upload usually
         username: '',
-        batch: '',
-        campus: 'Bengaluru',
-        branch: 'SOT'
+        // batch, campus, branch are set at registration and cannot be changed
     });
     const [avatarFile, setAvatarFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
@@ -111,9 +108,7 @@ const Profile = () => {
                 setEditForm({
                     bio: profileData.bio || '',
                     username: profileData.username || '',
-                    batch: profileData.batch || '',
-                    campus: profileData.campus || 'Bengaluru',
-                    branch: profileData.branch || 'SOT' // Adjusted to match DB column name 'branch' vs 'department'
+                    // batch, campus, branch locked at registration — not editable
                 });
 
             } catch (err) {
@@ -187,20 +182,30 @@ const Profile = () => {
 
     const handleRemoveFriend = async () => {
         try {
-            // 1. Delete Connection
-            const { error: connError } = await supabase
+            // 1. Delete Connection (Try both directions)
+            const { error: error1 } = await supabase
                 .from('connections')
                 .delete()
-                .or(`and(user_id.eq.${currentUser.id},friend_id.eq.${id}),and(user_id.eq.${id},friend_id.eq.${currentUser.id})`);
+                .eq('user_id', currentUser.id)
+                .eq('friend_id', id);
 
-            if (connError) throw connError;
+            const { error: error2 } = await supabase
+                .from('connections')
+                .delete()
+                .eq('user_id', id)
+                .eq('friend_id', currentUser.id);
 
-            // 2. Delete Notifications (either sent or received)
+            if (error1 && error2) {
+                // Technically only one should exist, if both error then something is wrong
+                // But usually, one succeeds and one "fails" (deletes 0 rows) which is fine.
+            }
+
+            // 2. Delete Notifications
             await supabase
                 .from('notifications')
                 .delete()
-                .or(`and(user_id.eq.${currentUser.id},sender_id.eq.${id}),and(user_id.eq.${id},sender_id.eq.${currentUser.id})`)
-                .eq('type', 'friend_request');
+                .eq('type', 'friend_request')
+                .or(`and(user_id.eq.${currentUser.id},sender_id.eq.${id}),and(user_id.eq.${id},sender_id.eq.${currentUser.id})`);
 
             setFriendship({ status: null, senderId: null });
         } catch (err) {
@@ -243,14 +248,11 @@ const Profile = () => {
             }
 
             // 2. Update Profile in Supabase (Database)
+            // Note: batch, campus, and branch are intentionally excluded — locked after registration
             const updates = {
                 username: editForm.username,
                 bio: editForm.bio,
-                campus: editForm.campus,
-                batch: editForm.batch,
-                branch: editForm.branch,
-                avatar_url: newAvatarUrl, // Update avatar_url in DB
-                // updated_at: new Date(), // REMOVED: Column does not exist in schema
+                avatar_url: newAvatarUrl,
             };
 
             const { error } = await supabase
@@ -399,63 +401,7 @@ const Profile = () => {
 
                                     {isEditing ? (
                                         <div className="space-y-4 max-w-lg mb-6">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="relative group">
-                                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Batch Year</label>
-                                                    <div className="relative">
-                                                        <select
-                                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-indigo-500 appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
-                                                            value={editForm.batch}
-                                                            onChange={e => setEditForm({ ...editForm, batch: e.target.value })}
-                                                        >
-                                                            <option value="" disabled>Select Year</option>
-                                                            {['2023', '2024', '2025'].map(year => (
-                                                                <option key={year} value={year}>{year}</option>
-                                                            ))}
-                                                        </select>
-                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                                            <ChevronDown size={14} />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="relative group">
-                                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Campus</label>
-                                                    <div className="relative">
-                                                        <select
-                                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-indigo-500 appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
-                                                            value={editForm.campus}
-                                                            onChange={e => setEditForm({ ...editForm, campus: e.target.value })}
-                                                        >
-                                                            {['Bengaluru', 'Lucknow', 'Pune', 'Noida', 'Indore', 'Patna'].map(c => (
-                                                                <option key={c} value={c}>{c}</option>
-                                                            ))}
-                                                        </select>
-                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                                            <ChevronDown size={14} />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="relative group">
-                                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Department</label>
-                                                    <div className="relative">
-                                                        <select
-                                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-indigo-500 appearance-none cursor-pointer hover:bg-slate-100 transition-colors"
-                                                            value={editForm.branch}
-                                                            onChange={e => setEditForm({ ...editForm, branch: e.target.value })}
-                                                        >
-                                                            {['SOT', 'SOM', 'SOH'].map(d => (
-                                                                <option key={d} value={d}>{d}</option>
-                                                            ))}
-                                                        </select>
-                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                                            <ChevronDown size={14} />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            {/* Batch, Campus, and Branch are set during registration and cannot be changed */}
                                             <div>
                                                 <label className="text-xs font-bold text-slate-400 uppercase">Bio</label>
                                                 <textarea

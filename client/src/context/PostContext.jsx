@@ -255,7 +255,8 @@ export const PostProvider = ({ children }) => {
         avatar: getAvatarUrl(c.profiles?.full_name, c.profiles?.avatar_url),
         text: c.text,
         parentId: c.parent_id,
-        time: new Date(c.created_at).toLocaleDateString()
+        time: new Date(c.created_at).toLocaleDateString(),
+        createdAt: c.created_at
       }));
 
       setPosts(current => current.map(p => {
@@ -286,6 +287,21 @@ export const PostProvider = ({ children }) => {
 
   const editComment = async (commentId, postId, newText) => {
     try {
+      // Find the comment to check timestamp
+      const post = posts.find(p => p.id === postId);
+      const comment = post?.comments?.find(c => c.id === commentId);
+
+      if (comment) {
+        const createdTime = new Date(comment.createdAt).getTime();
+        const now = new Date().getTime();
+        const minutesPassed = (now - createdTime) / (1000 * 60);
+
+        if (minutesPassed > 30) {
+          console.error('Comment editing window has closed (30 minutes passed).');
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from('comments')
         .update({ text: newText })
