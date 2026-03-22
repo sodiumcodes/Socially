@@ -1,37 +1,115 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap');
 @import "tailwindcss";
 
+/* Custom palettes → semantic UI (dark indigo velvet base + periwinkle primary + warm accents) */
 @theme {
-  --color-primary: #3b82f6;
-  --color-primary-foreground: #ffffff;
-  --color-background: #f1f5f9;
-  --color-card: #ffffff;
-  --color-text: #0f172a;
-  --color-text-muted: #64748b;
-  --color-border: #e2e8f0;
+  /* indigo_velvet */
+  --color-indigo-velvet: #3d348b;
+  --color-indigo-velvet-100: #0c0a1c;
+  --color-indigo-velvet-200: #181437;
+  --color-indigo-velvet-300: #241f53;
+  --color-indigo-velvet-400: #30296e;
+  --color-indigo-velvet-500: #3d348b;
+  --color-indigo-velvet-600: #5044b9;
+  --color-indigo-velvet-700: #7b72cb;
+  --color-indigo-velvet-800: #a7a1dc;
+  --color-indigo-velvet-900: #d3d0ee;
 
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-  --shadow-hover: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+  /* medium_slate_blue */
+  --color-medium-slate-blue: #7678ed;
+  --color-medium-slate-blue-100: #08093f;
+  --color-medium-slate-blue-200: #10127e;
+  --color-medium-slate-blue-300: #191bbe;
+  --color-medium-slate-blue-400: #383be5;
+  --color-medium-slate-blue-500: #7678ed;
+  --color-medium-slate-blue-600: #9394f1;
+  --color-medium-slate-blue-700: #aeaff4;
+  --color-medium-slate-blue-800: #c9caf8;
+  --color-medium-slate-blue-900: #e4e4fb;
+
+  /* amber_flame */
+  --color-amber-flame: #f7b801;
+  --color-amber-flame-100: #322500;
+  --color-amber-flame-200: #634b00;
+  --color-amber-flame-300: #957001;
+  --color-amber-flame-400: #c79501;
+  --color-amber-flame-500: #f7b801;
+  --color-amber-flame-600: #feca30;
+  --color-amber-flame-700: #fed864;
+  --color-amber-flame-800: #fee597;
+  --color-amber-flame-900: #fff2cb;
+
+  /* tiger_orange */
+  --color-tiger-orange: #f18701;
+  --color-tiger-orange-100: #301b00;
+  --color-tiger-orange-200: #5f3600;
+  --color-tiger-orange-300: #8f5101;
+  --color-tiger-orange-400: #bf6d01;
+  --color-tiger-orange-500: #f18701;
+  --color-tiger-orange-600: #fea128;
+  --color-tiger-orange-700: #feb95e;
+  --color-tiger-orange-800: #fed093;
+  --color-tiger-orange-900: #ffe8c9;
+
+  /* cayenne_red */
+  --color-cayenne-red: #f35b04;
+  --color-cayenne-red-100: #301201;
+  --color-cayenne-red-200: #602401;
+  --color-cayenne-red-300: #913602;
+  --color-cayenne-red-400: #c14903;
+  --color-cayenne-red-500: #f35b04;
+  --color-cayenne-red-600: #fc792e;
+  --color-cayenne-red-700: #fd9b62;
+  --color-cayenne-red-800: #fdbc97;
+  --color-cayenne-red-900: #fedecb;
+
+  /* Semantic tokens — warm CTAs + amber icons */
+  --color-background: var(--color-indigo-velvet-100);
+  --color-foreground: var(--color-indigo-velvet-900);
+  --color-card: var(--color-indigo-velvet-200);
+  --color-card-foreground: var(--color-indigo-velvet-900);
+  --color-muted: var(--color-indigo-velvet-300);
+  --color-muted-foreground: var(--color-indigo-velvet-800);
+  --color-border: var(--color-indigo-velvet-400);
+  /* Buttons: tiger orange → cayenne on hover */
+  --color-primary: #f18701;
+  --color-primary-hover: #f35b04;
+  --color-primary-foreground: #ffffff;
+  /* Nav / chrome icons */
+  --color-icon: #f7b801;
+  --color-accent: var(--color-amber-flame-500);
+  --color-accent-foreground: var(--color-indigo-velvet-100);
+  --color-destructive: var(--color-cayenne-red-500);
+  --color-destructive-foreground: #ffffff;
+  --color-popover: var(--color-indigo-velvet-200);
+  --color-popover-foreground: var(--color-indigo-velvet-900);
+  --color-ring: var(--color-amber-flame-500);
+
+  --shadow-card: 0 0 0 1px color-mix(in srgb, var(--color-indigo-velvet-700) 25%, transparent),
+    0 8px 32px rgba(12, 10, 28, 0.55);
+  --shadow-hover: 0 12px 40px color-mix(in srgb, var(--color-tiger-orange-500) 28%, transparent);
 }
 
 @layer base {
   body {
     background-color: var(--color-background);
-    color: var(--color-text);
-    font-family: 'Outfit', sans-serif;
-    /* Smooths out the fonts for a premium look */
+    color: var(--color-foreground);
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Soft warm light — adds depth without noisy gradients */
+    background-image:
+      radial-gradient(ellipse 100% 60% at 50% -15%, color-mix(in srgb, var(--color-icon) 14%, transparent), transparent 55%),
+      radial-gradient(ellipse 70% 45% at 100% 0%, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 50%),
+      radial-gradient(ellipse 55% 40% at 0% 80%, color-mix(in srgb, var(--color-medium-slate-blue-500) 8%, transparent), transparent 45%);
   }
 
-  /* Custom Selection Color */
   ::selection {
-    background-color: var(--color-primary);
-    color: white;
+    background-color: color-mix(in srgb, var(--color-icon) 38%, transparent);
+    color: var(--color-foreground);
   }
 }
 
-/* Specific class for your Layout's <main> area */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
@@ -46,13 +124,13 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
+  background: color-mix(in srgb, var(--color-icon) 45%, var(--color-border));
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: color-mix(in srgb, var(--color-indigo-velvet-200) 88%, transparent);
+  backdrop-filter: blur(14px);
+  border: 1px solid color-mix(in srgb, var(--color-icon) 18%, var(--color-indigo-velvet-700) 55%);
 }
 
 .scrollbar-hide::-webkit-scrollbar,
@@ -64,4 +142,20 @@
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Solid CTA: tiger orange default, cayenne hover */
+@layer components {
+  .btn-cta {
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+    transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  }
+  .btn-cta:hover:not(:disabled) {
+    background-color: var(--color-primary-hover);
+    box-shadow: 0 8px 28px color-mix(in srgb, var(--color-primary-hover) 35%, transparent);
+  }
+  .btn-cta:active:not(:disabled) {
+    transform: scale(0.98);
+  }
 }

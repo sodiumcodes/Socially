@@ -190,10 +190,10 @@ const CreatePostModal = () => {
   const isValid = content.trim().length >= MIN_CONTENT_LENGTH;
 
   const categories = [
-    { label: 'General Update', icon: FileText, color: 'text-slate-500' },
-    { label: 'Career Guidance', icon: Briefcase, color: 'text-indigo-500' },
+    { label: 'General Update', icon: FileText, color: 'text-muted-foreground' },
+    { label: 'Career Guidance', icon: Briefcase, color: 'text-primary' },
     { label: 'Opportunity', icon: Megaphone, color: 'text-emerald-500' },
-    { label: 'Event', icon: Calendar, color: 'text-rose-500' },
+    { label: 'Event', icon: Calendar, color: 'text-tiger-orange-500' },
   ];
 
   const currentCategory = categories.find(c => c.label === category) || categories[0];
@@ -208,7 +208,7 @@ const CreatePostModal = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleGuardedClose}
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-background/70 backdrop-blur-sm"
           />
 
           {/* Modal */}
@@ -217,15 +217,15 @@ const CreatePostModal = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
-            className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            className="relative w-full max-w-xl bg-card rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-border"
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white sticky top-0 z-10 shrink-0">
-              <h2 className="text-lg font-bold text-slate-800">Create Post</h2>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card sticky top-0 z-10 shrink-0">
+              <h2 className="text-lg font-bold text-foreground">Create Post</h2>
               <button
                 onClick={handleGuardedClose}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-colors"
+                className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors"
                 aria-label="Close modal"
               >
                 <X size={20} />
@@ -233,13 +233,13 @@ const CreatePostModal = () => {
             </div>
 
             {/* Content Scrollable Area */}
-            <div className="overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-slate-200">
+            <div className="overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-border">
 
               {/* Error Banner */}
               {error && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
-                  className="bg-rose-50 px-6 py-3 mb-4 rounded-xl border border-rose-100 flex items-center gap-2 text-rose-600 text-xs font-bold"
+                  className="bg-cayenne-red-500/10 px-6 py-3 mb-4 rounded-xl border border-cayenne-red-500/20 flex items-center gap-2 text-cayenne-red-500 text-xs font-bold"
                 >
                   <AlertCircle size={14} />
                   {error}
@@ -250,10 +250,10 @@ const CreatePostModal = () => {
                 <img
                   src={getAvatarUrl(user)}
                   alt={user?.name}
-                  className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-50 shrink-0"
+                  className="w-10 h-10 rounded-full object-cover ring-2 ring-border shrink-0"
                 />
                 <div className="flex-1 w-full">
-                  <h3 className="font-bold text-slate-900 text-sm leading-tight mb-2">{user?.name}</h3>
+                  <h3 className="font-bold text-foreground text-sm leading-tight mb-2">{user?.name}</h3>
 
                   {/* Selectors Row */}
                   <div className="flex flex-wrap gap-2 relative">
@@ -273,7 +273,7 @@ const CreatePostModal = () => {
                           }
                           setShowAdvancedVisibility(!showAdvancedVisibility);
                         }}
-                        className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-all border ${showAdvancedVisibility ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'text-slate-500 bg-slate-100/80 border-transparent hover:border-slate-200'
+                        className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-all border ${showAdvancedVisibility ? 'bg-primary/10 text-primary border-primary/20' : 'text-muted-foreground bg-muted/80 border-transparent hover:border-border'
                           }`}
                       >
                         <Globe size={11} />
@@ -286,12 +286,12 @@ const CreatePostModal = () => {
                         {showAdvancedVisibility && (
                           <motion.div
                             initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                            className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-slate-100 p-4 z-50 origin-top-left"
+                            className="absolute top-full left-0 mt-2 w-72 bg-card rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.45)] border border-border p-4 z-50 origin-top-left"
                           >
                             <div className="space-y-4">
                               {/* Header with Clear All */}
-                              <div className="flex justify-between items-center pb-2 border-b border-slate-50">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Filters</span>
+                              <div className="flex justify-between items-center pb-2 border-b border-border">
+                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Filters</span>
                                 {(tempBatches.length > 0 || tempCampuses.length > 0 || tempBranches.length > 0) && (
                                   <button
                                     onClick={() => {
@@ -299,7 +299,7 @@ const CreatePostModal = () => {
                                       setTempCampuses([]);
                                       setTempBranches([]);
                                     }}
-                                    className="text-[10px] font-black text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-tight"
+                                    className="text-[10px] font-black text-cayenne-red-500 hover:text-cayenne-red-600 transition-colors uppercase tracking-tight"
                                   >
                                     Clear All
                                   </button>
@@ -307,13 +307,13 @@ const CreatePostModal = () => {
                               </div>
 
                               {/* Audience Configuration Panel */}
-                              <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-200">
+                              <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-border">
 
                                 {/* Batches Group */}
                                 <div>
                                   <div className="flex justify-between items-center mb-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Batches</label>
-                                    <button onClick={() => toggleAll(BATCHES, tempBatches, setTempBatches)} className="text-[9px] font-bold text-indigo-600 hover:underline">
+                                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Batches</label>
+                                    <button onClick={() => toggleAll(BATCHES, tempBatches, setTempBatches)} className="text-[9px] font-bold text-primary hover:underline">
                                       {tempBatches.length === BATCHES.length ? 'Clear' : 'Select All'}
                                     </button>
                                   </div>
@@ -322,7 +322,7 @@ const CreatePostModal = () => {
                                       <button
                                         key={batch}
                                         onClick={() => toggleSelection(batch, tempBatches, setTempBatches)}
-                                        className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-all ${tempBatches.includes(batch) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-200'}`}
+                                        className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-all ${tempBatches.includes(batch) ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border hover:border-primary/30'}`}
                                       >
                                         {batch}
                                       </button>
@@ -333,8 +333,8 @@ const CreatePostModal = () => {
                                 {/* Campus Group */}
                                 <div>
                                   <div className="flex justify-between items-center mb-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Campuses</label>
-                                    <button onClick={() => toggleAll(CAMPUSES, tempCampuses, setTempCampuses)} className="text-[9px] font-bold text-indigo-600 hover:underline">
+                                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Campuses</label>
+                                    <button onClick={() => toggleAll(CAMPUSES, tempCampuses, setTempCampuses)} className="text-[9px] font-bold text-primary hover:underline">
                                       {tempCampuses.length === CAMPUSES.length ? 'Clear' : 'Select All'}
                                     </button>
                                   </div>
@@ -343,7 +343,7 @@ const CreatePostModal = () => {
                                       <button
                                         key={campus}
                                         onClick={() => toggleSelection(campus, tempCampuses, setTempCampuses)}
-                                        className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-all ${tempCampuses.includes(campus) ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-slate-500 border-slate-200 hover:border-teal-200'}`}
+                                        className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-all ${tempCampuses.includes(campus) ? 'bg-teal-600 text-white border-teal-600' : 'bg-card text-muted-foreground border-border hover:border-teal-500/40'}`}
                                       >
                                         {campus}
                                       </button>
@@ -354,8 +354,8 @@ const CreatePostModal = () => {
                                 {/* Branch Group */}
                                 <div>
                                   <div className="flex justify-between items-center mb-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Branches</label>
-                                    <button onClick={() => toggleAll(BRANCHES, tempBranches, setTempBranches)} className="text-[9px] font-bold text-indigo-600 hover:underline">
+                                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Branches</label>
+                                    <button onClick={() => toggleAll(BRANCHES, tempBranches, setTempBranches)} className="text-[9px] font-bold text-primary hover:underline">
                                       {tempBranches.length === BRANCHES.length ? 'Clear' : 'Select All'}
                                     </button>
                                   </div>
@@ -364,7 +364,7 @@ const CreatePostModal = () => {
                                       <button
                                         key={branch}
                                         onClick={() => toggleSelection(branch, tempBranches, setTempBranches)}
-                                        className={`px-2 py-1.5 rounded-md text-[10px] font-bold border text-left transition-all ${tempBranches.includes(branch) ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-slate-500 border-slate-200 hover:border-orange-200'}`}
+                                        className={`px-2 py-1.5 rounded-md text-[10px] font-bold border text-left transition-all ${tempBranches.includes(branch) ? 'bg-orange-500 text-white border-orange-500' : 'bg-card text-muted-foreground border-border hover:border-orange-400/40'}`}
                                       >
                                         {branch}
                                       </button>
@@ -375,7 +375,7 @@ const CreatePostModal = () => {
                               </div>
 
                               {/* Footer Submit Button */}
-                              <div className="pt-4 border-t border-slate-100 flex justify-end">
+                              <div className="pt-4 border-t border-border flex justify-end">
                                 <button
                                   onClick={() => {
                                     setSelectedBatches(tempBatches);
@@ -399,8 +399,8 @@ const CreatePostModal = () => {
                                     tempCampuses.every(v => selectedCampuses.includes(v)) &&
                                     tempBranches.every(v => selectedBranches.includes(v))
                                   )
-                                    ? 'bg-slate-900 text-white hover:bg-slate-800 shadow-lg'
-                                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                    ? 'bg-foreground text-background hover:bg-primary-hover shadow-lg'
+                                    : 'bg-muted text-muted-foreground cursor-not-allowed'
                                     }`}
                                 >
                                   Submit
@@ -416,7 +416,7 @@ const CreatePostModal = () => {
                     <div className="relative">
                       <button
                         onClick={() => { setShowCategoryMenu(!showCategoryMenu); setShowAdvancedVisibility(false); }}
-                        className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 bg-slate-100/80 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200"
+                        className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground bg-muted/80 px-2.5 py-1.5 rounded-lg hover:bg-muted transition-colors border border-transparent hover:border-border"
                       >
                         <ChevronDown size={10} />
                         {currentCategory ? currentCategory.label : category}
@@ -426,7 +426,7 @@ const CreatePostModal = () => {
                         {showCategoryMenu && (
                           <motion.div
                             initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                            className="absolute top-full left-0 mt-1 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-1 z-20 overflow-hidden"
+                            className="absolute top-full left-0 mt-1 w-48 bg-card rounded-xl shadow-xl border border-border py-1 z-20 overflow-hidden"
                           >
                             {categories.map((cat) => (
                               <button
@@ -435,9 +435,9 @@ const CreatePostModal = () => {
                                   setCategory(cat.label);
                                   setShowCategoryMenu(false);
                                 }}
-                                className={`w-full text-left px-4 py-2.5 text-[11px] font-bold flex items-center gap-2 transition-colors ${category === cat.label ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-50'}`}
+                                className={`w-full text-left px-4 py-2.5 text-[11px] font-bold flex items-center gap-2 transition-colors ${category === cat.label ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'}`}
                               >
-                                <cat.icon size={14} className={category === cat.label ? 'text-indigo-600' : cat.color} />
+                                <cat.icon size={14} className={category === cat.label ? 'text-primary' : cat.color} />
                                 {cat.label}
                               </button>
                             ))}
@@ -454,7 +454,7 @@ const CreatePostModal = () => {
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Share your thoughts... (min 10 chars)"
-                className="w-full text-base text-slate-700 placeholder:text-slate-300 border-none outline-none resize-none bg-transparent min-h-[120px]"
+                className="w-full text-base text-foreground placeholder:text-muted-foreground border-none outline-none resize-none bg-transparent min-h-[120px]"
               />
 
               <div className="mb-4">
@@ -493,7 +493,7 @@ const CreatePostModal = () => {
               {previewUrls.length > 0 && (
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-slate-500">
+                    <span className="text-xs font-bold text-muted-foreground">
                       {previewUrls.length}/5 images
                     </span>
                     <button
@@ -502,7 +502,7 @@ const CreatePostModal = () => {
                         setImageFiles([]);
                         setPreviewUrls([]);
                       }}
-                      className="text-xs font-bold text-rose-500 hover:text-rose-600"
+                      className="text-xs font-bold text-cayenne-red-500 hover:text-cayenne-red-600"
                     >
                       Remove All
                     </button>
@@ -514,7 +514,7 @@ const CreatePostModal = () => {
                           'grid-cols-3'
                     }`}>
                     {previewUrls.map((url, index) => (
-                      <div key={index} className="relative rounded-xl overflow-hidden group border border-slate-100">
+                      <div key={index} className="relative rounded-xl overflow-hidden group border border-border">
                         <img
                           src={url}
                           alt={`Preview ${index + 1}`}
@@ -539,19 +539,19 @@ const CreatePostModal = () => {
             </div>
 
             {/* Footer Actions */}
-            <div className="flex items-center justify-between p-6 pt-4 border-t border-slate-50 bg-white sticky bottom-0 z-10">
+            <div className="flex items-center justify-between p-6 pt-4 border-t border-border bg-card sticky bottom-0 z-10">
               <div className="flex gap-2 relative">
                 <div className="flex gap-1">
                   <button
                     onClick={() => document.getElementById('post-image-upload')?.click()}
-                    className="p-2.5 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-xl transition-all"
+                    className="p-2.5 text-icon hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
                     title="Add Image"
                   >
                     <Image size={22} />
                   </button>
                   <button
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    className="p-2.5 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-xl transition-all"
+                    className="p-2.5 text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10 rounded-xl transition-all"
                   >
                     <Smile size={22} />
                   </button>
@@ -561,8 +561,8 @@ const CreatePostModal = () => {
                   <div className="absolute bottom-full left-0 mb-2 z-50">
                     {/* We will lazy load or load the picker here if available, or just a placeholder if not. 
                           Since package.json says emoji-picker-react is there, we use it. */}
-                    <React.Suspense fallback={<div className="bg-white p-4 shadow-xl rounded-2xl">Loading...</div>}>
-                      <EmojiPicker onEmojiClick={onEmojiClick} width={300} height={400} />
+                    <React.Suspense fallback={<div className="bg-card p-4 shadow-xl rounded-2xl border border-border">Loading...</div>}>
+                      <EmojiPicker onEmojiClick={onEmojiClick} width={300} height={400} theme="dark" />
                     </React.Suspense>
                   </div>
                 )}
@@ -570,7 +570,7 @@ const CreatePostModal = () => {
 
               <div className="flex items-center gap-4">
                 <div className="flex flex-col items-end">
-                  <span className={`text-[10px] font-bold transition-colors ${content.length > 0 && content.length < MIN_CONTENT_LENGTH ? 'text-orange-500' : 'text-slate-300'}`}>
+                  <span className={`text-[10px] font-bold transition-colors ${content.length > 0 && content.length < MIN_CONTENT_LENGTH ? 'text-orange-400' : 'text-muted-foreground'}`}>
                     {content.length > 0 && content.length < MIN_CONTENT_LENGTH ? `${MIN_CONTENT_LENGTH - content.length} more` : `${content.length}/500`}
                   </span>
                 </div>
@@ -579,10 +579,10 @@ const CreatePostModal = () => {
                   onClick={handleSubmit}
                   disabled={!isValid || isSubmitting}
                   className={`
-                    px-6 py-2.5 rounded-xl text-sm font-black text-white transition-all transform flex items-center gap-2
+                    px-6 py-2.5 rounded-xl text-sm font-black transition-all transform flex items-center gap-2
                     ${(!isValid || isSubmitting)
-                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                      : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200 hover:-translate-y-0.5'
+                      ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                      : 'btn-cta hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5'
                     }
                   `}
                 >

@@ -1,22 +1,20 @@
 import React from 'react';
-import {
-  Home, Users, Calendar, Video, Image, FileText,
-  ChevronDown, LayoutGrid, Bookmark, Star, Settings, Bell,
-  Sparkles, ShieldCheck, Zap
+import { 
+  LayoutGrid, Users, Calendar, 
+  Bookmark, LogOut, Sparkles, Star, Video, FileText, UserCircle, ShieldCheck, MapPin
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { motion } from 'framer-motion';
 import { getAvatarUrl } from '../utils/avatar';
 
 const Sidebar = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
   const menuItems = [
     { icon: LayoutGrid, label: 'Feed', path: '/feed' },
-    { icon: Users, label: 'Connections', path: '/connections' },
+    { icon: Users, label: 'Community', path: '/community' },
     { icon: Calendar, label: 'Events', badge: '4', path: '/events' },
     { icon: Video, label: 'Live Stream', path: '/live' },
     { icon: Star, label: 'Favorites', path: '/favorites' },
@@ -24,128 +22,99 @@ const Sidebar = () => {
     { icon: FileText, label: 'Resources', path: '/resources' },
   ];
 
-  const getIsActive = (itemPath) => {
-    // Simple active check logic
-    if (itemPath === '/feed') return location.pathname === '/feed';
-    return location.pathname.startsWith(itemPath);
+  const handleCreateEvent = () => {
+    navigate('/events', { state: { openCreateModal: true } });
   };
 
   return (
-    /* PREMIUM FRAME: Borderless feel with high-end shadow */
-    <aside className="w-[260px] hidden lg:flex flex-col h-[calc(100vh-64px)] overflow-y-auto pr-3 pl-5 no-scrollbar py-6 sticky top-16 bg-white/80 backdrop-blur-xl border-r border-slate-100/50">
-
-      {/* 1. High-End Profile Header */}
-      <Link to={`/profile/${user?.id}`} className="flex items-center gap-3.5 px-2 mb-10 group cursor-pointer relative">
-        <div className="relative shrink-0">
-          <div className="absolute -inset-1 bg-gradient-to-tr from-indigo-500 to-fuchsia-500 rounded-full blur-[2px] opacity-0 group-hover:opacity-40 transition-opacity duration-500"></div>
-          {/* ... Image & Info (Same as before) ... */}
-          {/* Re-implementing inner content since replace overwrites block */}
-          <img
-            src={getAvatarUrl(user)}
-            className="w-11 h-11 rounded-full object-cover relative border-2 border-white shadow-sm"
-            alt="Profile"
-          />
-          <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full shadow-sm" />
-        </div>
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <h3 className="font-black text-slate-900 text-[14px] tracking-tight truncate">
-              {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Guest User'}
-            </h3>
-            <ShieldCheck size={14} className="text-indigo-500 shrink-0" fill="currentColor" fillOpacity={0.1} />
-          </div>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{user?.role || 'Student'}</p>
-        </div>
-      </Link>
-
-      {/* 2. Navigation with "Floating" Active State */}
-      <nav className="flex-1 space-y-8">
-        <div>
-          <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.25em] mb-5 ml-2">Navigation</h4>
-          <ul className="space-y-1">
-            {menuItems.map((item, index) => {
-              const isActive = getIsActive(item.path);
-              return (
-                <li key={index}>
-                  <Link
-                    to={item.path}
-                    className={`w-full flex items-center justify-between px-4 py-2.5 rounded-2xl transition-all duration-500 group relative ${isActive
-                      ? 'text-indigo-600'
-                      : 'text-slate-500 hover:text-slate-900'
-                      }`}
-                  >
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeNav"
-                        className="absolute inset-0 bg-indigo-50/60 rounded-[1.25rem] border border-indigo-100/50"
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                      />
-                    )}
-
-                    <div className="flex items-center gap-4 relative z-10">
-                      <item.icon className={`w-5 h-5 transition-transform duration-300 ${isActive ? 'text-indigo-600 scale-110' : 'text-slate-400 group-hover:scale-110 group-hover:text-indigo-500'
-                        }`} />
-                      <span className={`font-bold text-[13px] tracking-tight ${isActive ? 'text-indigo-700' : ''}`}>
-                        {item.label}
-                      </span>
-                    </div>
-
-                    {item.badge && (
-                      <span className="relative z-10 text-[9px] font-black px-2 py-0.5 bg-white shadow-sm border border-slate-100 rounded-lg text-slate-600 group-hover:border-indigo-200">
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-
-        {/* 3. Premium Quick Actions Card */}
-        <div className="mx-2 p-5 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-[2rem] shadow-xl shadow-indigo-100 relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 w-20 h-20 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
-          <div className="relative z-10">
-            <div className="bg-white/20 backdrop-blur-md w-8 h-8 rounded-xl flex items-center justify-center mb-3">
-              <Zap size={16} className="text-white fill-white" />
+    <aside className="hidden lg:flex flex-col w-72 shrink-0 sticky top-20 h-[calc(100vh-6rem)] overflow-y-auto no-scrollbar pb-6">
+      {/* Detailed Profile Card */}
+      {user && (
+        <Link 
+          to={`/profile/${user.id}`}
+          className="bg-card rounded-[2.5rem] border border-border shadow-sm overflow-hidden mb-4 group hover:border-primary/30 transition-all shrink-0"
+        >
+          <div className="p-6">
+            <div className="flex items-center gap-2 mb-1.5">
+              <h3 className="font-black text-foreground text-sm tracking-tight group-hover:text-primary transition-colors truncate">
+                {user.user_metadata?.full_name || 'My Profile'}
+              </h3>
+              <ShieldCheck size={14} className="text-primary shrink-0" />
             </div>
-            <p className="text-white text-[12px] font-black leading-tight">Host an Event</p>
-            <p className="text-indigo-100 text-[10px] font-medium mt-1">Start a campus meetup</p>
-            <button className="mt-4 w-full py-2 bg-white text-indigo-600 text-[11px] font-black uppercase tracking-wider rounded-xl shadow-lg hover:bg-indigo-50 transition-colors">
-              Create Now
-            </button>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">
+              {user.user_metadata?.branch || 'Student'} • {user.user_metadata?.batch || '2026'}
+            </p>
+            <div className="flex items-center gap-1 text-[10px] font-black text-primary uppercase tracking-tighter bg-primary/10 w-fit px-2 py-0.5 rounded-lg">
+              <MapPin size={10} /> {user.user_metadata?.campus || 'Campus'}
+            </div>
           </div>
-        </div>
-      </nav>
+        </Link>
+      )}
 
-      {/* 4. Settings & Notifications (Integrated Icons) */}
-      <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-around">
-        <NavBottomBtn icon={<Settings size={18} />} label="Settings" />
-        <div className="w-[1px] h-4 bg-slate-100" />
-        <NavBottomBtn
-          icon={<Bell size={18} />}
-          label="Alerts"
-          badge
-          onClick={() => navigate('/notifications')}
-        />
-        <div className="w-[1px] h-4 bg-slate-100" />
-        <NavBottomBtn icon={<Sparkles size={18} />} label="Themes" />
+      {/* Primary Navigation */}
+      <div className="bg-card rounded-[2.5rem] border border-border shadow-sm overflow-hidden mb-4 shrink-0">
+        <div className="p-3 space-y-1">
+          {menuItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.label}
+                to={item.path}
+                className={`
+                  flex items-center justify-between p-3.5 rounded-2xl transition-all group
+                  ${isActive 
+                    ? 'bg-primary text-white shadow-lg shadow-primary/20' 
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'}
+                `}
+              >
+                <div className="flex items-center gap-3.5">
+                  <item.icon size={20} className={isActive ? 'text-white' : 'text-icon'} />
+                  <span className="text-sm font-bold tracking-tight">{item.label}</span>
+                </div>
+                {item.badge && (
+                  <span className={`
+                    text-[10px] font-black px-2 py-0.5 rounded-lg
+                    ${isActive ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'}
+                  `}>
+                    {item.badge}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </div>
       </div>
 
+      {/* Action Card */}
+      <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-[2.5rem] p-6 mb-4 border border-primary/20 relative overflow-hidden group shrink-0">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700" />
+        <div className="relative z-10">
+          <div className="bg-primary/10 w-10 h-10 rounded-xl flex items-center justify-center mb-4">
+            <Sparkles className="text-primary w-5 h-5" />
+          </div>
+          <h3 className="text-foreground font-black text-lg leading-tight mb-2">Host an<br />Event?</h3>
+          <p className="text-muted-foreground text-xs font-medium mb-4 leading-relaxed">Share your knowledge with the campus community.</p>
+          <button 
+            onClick={handleCreateEvent}
+            className="w-full py-3 bg-primary text-white text-[11px] font-black uppercase tracking-[0.15em] rounded-xl hover:bg-primary-hover transition-all shadow-lg shadow-primary/25"
+          >
+            Create Now
+          </button>
+        </div>
+      </div>
+
+      {/* Bottom Actions */}
+      <div className="bg-card rounded-[2.5rem] border border-border p-3 space-y-1 mt-auto">
+        <button 
+          onClick={logout}
+          className="w-full flex items-center gap-3.5 p-3.5 rounded-2xl text-cayenne-red-500 hover:bg-cayenne-red-500/5 transition-all group"
+        >
+          <LogOut size={20} />
+          <span className="text-sm font-bold tracking-tight">Logout</span>
+        </button>
+      </div>
     </aside>
   );
 };
-
-/* --- Internal Premium Components --- */
-
-const NavBottomBtn = ({ icon, label, badge, onClick }) => (
-  <button className="flex flex-col items-center gap-1 group" onClick={onClick}>
-    <div className="p-2 rounded-xl text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all relative">
-      {icon}
-      {badge && <div className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />}
-    </div>
-    <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter group-hover:text-slate-900">{label}</span>
-  </button>
-);
 
 export default Sidebar;

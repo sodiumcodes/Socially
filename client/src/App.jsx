@@ -10,6 +10,12 @@ import CreatePostModal from './components/CreatePostModal';
 import { SearchProvider } from './context/SearchContext';
 import SearchResults from './pages/SearchResults';
 import Notifications from './pages/Notifications';
+import Community from './pages/Community';
+import Favorites from './pages/Favorites';
+import Saved from './pages/Saved';
+import Events from './pages/Events';
+import LiveStream from './pages/LiveStream';
+import Resources from './pages/Resources';
 
 function App() {
   return (
@@ -34,11 +40,17 @@ function App() {
                 </ProtectedRoute>
               } />
 
-              {/* Placeholder routes for others using Feed for now until created */}
+              {/* Functional routes */}
               <Route path="/network" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
               <Route path="/jobs" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
               <Route path="/messages" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
-              <Route path="/connections" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+              <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
+              <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
+              <Route path="/saved" element={<ProtectedRoute><Saved /></ProtectedRoute>} />
+              <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
+              <Route path="/live" element={<ProtectedRoute><LiveStream /></ProtectedRoute>} />
+              <Route path="/resources" element={<ProtectedRoute><Resources /></ProtectedRoute>} />
+              <Route path="/connections" element={<Navigate to="/community" replace />} />
               <Route path="/profile/:id" element={
                 <ProtectedRoute>
                   <Profile />
