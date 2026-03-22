@@ -10,7 +10,9 @@ const ProfileFriendAdded = ({
     onRemoveFriend,
     toggleLike,
     addComment,
-    fetchComments
+    fetchComments,
+    onFollowersClick,
+    onFollowingClick
 }) => {
     if (!profile) {
         return (
@@ -21,10 +23,10 @@ const ProfileFriendAdded = ({
     }
 
     return (
-        <div className="min-h-screen bg-background py-12 px-4">
+        <div className="min-h-screen bg-background py-6 px-4">
             <div className="max-w-5xl mx-auto">
                 {/* Single Unified Card Container */}
-                <div className="bg-card rounded-3xl shadow-xl border border-border overflow-hidden">
+                <div className="bg-card rounded-[2.5rem] shadow-sm border border-border overflow-hidden mb-6">
                     {/* Profile Header Section */}
                     <ProfileHeader
                         profile={profile}
@@ -34,7 +36,11 @@ const ProfileFriendAdded = ({
                     />
 
                     {/* Stats Section */}
-                    <StatsSection stats={stats} />
+                    <StatsSection 
+                        stats={stats} 
+                        onFollowersClick={onFollowersClick}
+                        onFollowingClick={onFollowingClick}
+                    />
 
                     {/* Posts Section - Inside Same Container */}
                     <div className="px-8 py-6">

@@ -4,7 +4,7 @@ import StatsSection from './StatsSection';
 import PostCard from './PostCard';
 import { usePosts } from '../context/PostContext';
 
-const ProfileNotFriend = ({ profile, posts = [], stats = { posts: 0, followers: 0, following: 0 }, onAddFriend, toggleLike, addComment, fetchComments }) => {
+const ProfileNotFriend = ({ profile, posts = [], stats = { posts: 0, followers: 0, following: 0 }, onAddFriend, toggleLike, addComment, fetchComments, onFollowersClick, onFollowingClick }) => {
     if (!profile) {
         return (
             <div className="min-h-screen bg-background py-12 px-4 flex items-center justify-center">
@@ -27,7 +27,11 @@ const ProfileNotFriend = ({ profile, posts = [], stats = { posts: 0, followers: 
                     />
 
                     {/* Stats Section */}
-                    <StatsSection stats={stats} />
+                    <StatsSection 
+                        stats={stats} 
+                        onFollowersClick={onFollowersClick}
+                        onFollowingClick={onFollowingClick}
+                    />
                 </div>
 
                 {/* Posts Section */}

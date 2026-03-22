@@ -13,6 +13,7 @@ import { mapCommentRows } from '../utils/comments';
 import ProfileFriendAdded from '../components/ProfileFriendAdded';
 import ProfileNotFriend from '../components/ProfileNotFriend';
 import ProfilePending from '../components/ProfilePending';
+import ConnectionsModal from '../components/ConnectionsModal';
 
 const Profile = () => {
     const { id } = useParams();
@@ -29,6 +30,9 @@ const Profile = () => {
     const [loadingFollowing, setLoadingFollowing] = useState(false);
     const [stats, setStats] = useState({ posts: 0, followers: 0, following: 0 });
 
+    const [isConnectionsModalOpen, setIsConnectionsModalOpen] = useState(false);
+    const [connectionsModalType, setConnectionsModalType] = useState('followers');
+
     // Edit Mode State
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({
@@ -44,6 +48,16 @@ const Profile = () => {
     // Use a ref to track if it's the first mount or id change
     const isInitialMount = useRef(true);
     const prevId = useRef(id);
+
+    const openFollowers = () => {
+        setConnectionsModalType('followers');
+        setIsConnectionsModalOpen(true);
+    };
+
+    const openFollowing = () => {
+        setConnectionsModalType('following');
+        setIsConnectionsModalOpen(true);
+    };
 
     useEffect(() => {
         const fetchProfileAndPosts = async () => {
@@ -595,11 +609,17 @@ const Profile = () => {
                                         <div className="text-xl font-black text-foreground">{stats.posts}</div>
                                         <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Posts</div>
                                     </div>
-                                    <div className="text-center">
+                                    <div 
+                                        className="text-center cursor-pointer hover:opacity-70 transition-opacity"
+                                        onClick={openFollowers}
+                                    >
                                         <div className="text-xl font-black text-foreground">{stats.followers}</div>
                                         <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Followers</div>
                                     </div>
-                                    <div className="text-center">
+                                    <div 
+                                        className="text-center cursor-pointer hover:opacity-70 transition-opacity"
+                                        onClick={openFollowing}
+                                    >
                                         <div className="text-xl font-black text-foreground">{stats.following}</div>
                                         <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Following</div>
                                     </div>
@@ -626,10 +646,18 @@ const Profile = () => {
                                     <Calendar className="w-8 h-8" />
                                 </div>
                                 <h3 className="text-lg font-bold text-foreground mb-1">No posts yet</h3>
-                                <p className="text-muted-foreground text-sm">When {profile.full_name} posts, you'll see it here.</p>
+                                <p className="text-muted-foreground text-sm font-medium">When {profile.full_name} posts, you'll see it here.</p>
                             </div>
                         )}
                     </main>
+
+                    <ConnectionsModal 
+                        isOpen={isConnectionsModalOpen}
+                        onClose={() => setIsConnectionsModalOpen(false)}
+                        type={connectionsModalType}
+                        userId={id}
+                        currentUserId={currentUser?.id}
+                    />
 
                     <div className="hidden xl:block w-80 shrink-0">
                         <div className="sticky top-20 bg-card rounded-3xl p-6 border border-border shadow-sm">
@@ -676,6 +704,8 @@ const Profile = () => {
                             toggleLike={toggleLike}
                             addComment={addComment}
                             fetchComments={fetchCommentsForProfile}
+                            onFollowersClick={openFollowers}
+                            onFollowingClick={openFollowing}
                         />
                     ) : friendship.status === 'pending' ? (
                         <ProfilePending
@@ -688,6 +718,8 @@ const Profile = () => {
                             toggleLike={toggleLike}
                             addComment={addComment}
                             fetchComments={fetchCommentsForProfile}
+                            onFollowersClick={openFollowers}
+                            onFollowingClick={openFollowing}
                         />
                     ) : (
                         <ProfileNotFriend
@@ -698,8 +730,18 @@ const Profile = () => {
                             toggleLike={toggleLike}
                             addComment={addComment}
                             fetchComments={fetchCommentsForProfile}
+                            onFollowersClick={openFollowers}
+                            onFollowingClick={openFollowing}
                         />
                     )}
+
+                    <ConnectionsModal 
+                        isOpen={isConnectionsModalOpen}
+                        onClose={() => setIsConnectionsModalOpen(false)}
+                        type={connectionsModalType}
+                        userId={id}
+                        currentUserId={currentUser?.id}
+                    />
                 </main>
                 <div className="hidden xl:block w-80 shrink-0">
                     <div className="sticky top-20 bg-card rounded-3xl p-6 border border-border shadow-sm">
