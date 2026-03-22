@@ -16,7 +16,7 @@ const Sidebar = () => {
 
   const menuItems = [
     { icon: LayoutGrid, label: 'Feed', path: '/feed' },
-    { icon: Users, label: 'Connections', path: '/connections' },
+    { icon: Users, label: 'Community', path: '/community' },
     { icon: Calendar, label: 'Events', badge: '4', path: '/events' },
     { icon: Video, label: 'Live Stream', path: '/live' },
     { icon: Star, label: 'Favorites', path: '/favorites' },

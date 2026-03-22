@@ -1,16 +1,66 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Calendar, Sparkles, TrendingUp, ArrowUpRight, MapPin, Clock 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { supabase } from '../lib/supabaseClient';
+import { useNavigate } from 'react-router-dom';
 
 const Rightbar = () => {
-  const trendingHashtags = [
-    { tag: 'Engineering', posts: '12k', rank: 1, category: 'Academic' },
-    { tag: 'Hackathon2026', posts: '8.4k', rank: 2, category: 'Events' },
-    { tag: 'BengaluruTech', posts: '5.2k', rank: 3, category: 'Local' },
-    { tag: 'OpenSource', posts: '3.1k', rank: 4, category: 'Coding' },
-  ];
+  const navigate = useNavigate();
+  const [trendingHashtags, setTrendingHashtags] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTrending = async () => {
+      try {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const { data, error } = await supabase
+          .from('posts')
+          .select('content')
+          .gt('created_at', thirtyDaysAgo.toISOString());
+
+        if (error) throw error;
+
+        const counts = {};
+        data.forEach(post => {
+          if (!post.content) return;
+          const tags = post.content.match(/#\w+/g);
+          if (tags) {
+            tags.forEach(tag => {
+              const cleanTag = tag.slice(1);
+              counts[cleanTag] = (counts[cleanTag] || 0) + 1;
+            });
+          }
+        });
+
+        const sorted = Object.entries(counts)
+          .map(([tag, count]) => ({ tag, postsCount: count }))
+          .sort((a, b) => b.postsCount - a.postsCount)
+          .slice(0, 5)
+          .map((item, i) => ({
+            tag: item.tag,
+            posts: item.postsCount > 999 ? (item.postsCount / 1000).toFixed(1) + 'k' : item.postsCount.toString(),
+            rank: i + 1,
+            category: 'Trending'
+          }));
+
+        setTrendingHashtags(sorted);
+      } catch (err) {
+        console.error('Trending fetch error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTrending();
+  }, []);
+
+  const handleHashtagClick = (tag) => {
+    navigate(`/search?q=%23${tag}`);
+  };
 
   return (
     /* FIX: Isolated Scroll 
@@ -29,25 +79,34 @@ const Rightbar = () => {
           </div>
 
           <div className="space-y-1">
-            {trendingHashtags.map((item, i) => (
-              <motion.div 
-                key={i}
-                whileHover={{ x: 5 }}
-                className="group flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-all border border-transparent hover:bg-muted"
-              >
-                <div className="flex items-center gap-4">
-                   <span className="text-[10px] font-black text-muted-foreground/60 w-4">{item.rank}</span>
-                   <div>
-                     <p className="text-[11px] font-bold text-primary uppercase tracking-tighter mb-0.5">{item.category}</p>
-                     <p className="font-black text-foreground text-sm">#{item.tag}</p>
-                     <p className="text-[10px] text-muted-foreground font-bold">{item.posts} interactions</p>
-                   </div>
-                </div>
-                <div className="text-border group-hover:text-icon group-hover:translate-x-1 transition-all">
-                   <ArrowUpRight size={18} />
-                </div>
-              </motion.div>
-            ))}
+            {loading ? (
+              <div className="flex justify-center py-4">
+                <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+              </div>
+            ) : trendingHashtags.length > 0 ? (
+              trendingHashtags.map((item, i) => (
+                <motion.div 
+                  key={i}
+                  whileHover={{ x: 5 }}
+                  onClick={() => handleHashtagClick(item.tag)}
+                  className="group flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-all border border-transparent hover:bg-muted"
+                >
+                  <div className="flex items-center gap-4">
+                     <span className="text-[10px] font-black text-muted-foreground/60 w-4">{item.rank}</span>
+                     <div>
+                       <p className="text-[11px] font-bold text-primary uppercase tracking-tighter mb-0.5">{item.category}</p>
+                       <p className="font-black text-foreground text-sm">#{item.tag}</p>
+                       <p className="text-[10px] text-muted-foreground font-bold">{item.posts} posts</p>
+                     </div>
+                  </div>
+                  <div className="text-border group-hover:text-icon group-hover:translate-x-1 transition-all">
+                     <ArrowUpRight size={18} />
+                  </div>
+                </motion.div>
+              ))
+            ) : (
+              <p className="text-[10px] text-muted-foreground font-bold text-center py-4 uppercase tracking-widest">No recent trends</p>
+            )}
           </div>
 
           <button className="w-full mt-6 py-3.5 text-[10px] font-black text-muted-foreground uppercase tracking-widest border border-border hover:border-primary/40 hover:text-primary rounded-2xl transition-all">

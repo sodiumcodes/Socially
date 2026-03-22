@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import { MapPin, Calendar, ShieldCheck, Edit3, X, Check } from 'lucide-react';
@@ -16,29 +16,48 @@ import ProfilePending from '../components/ProfilePending';
 
 const Profile = () => {
     const { id } = useParams();
+    const navigate = useNavigate();
     const { user: currentUser } = useAuth(); // Get logged-in user
     const { toggleLike, addComment, fetchComments, refreshTrigger } = usePosts();
     const [profile, setProfile] = useState(null);
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
     const [friendship, setFriendship] = useState({ status: null, senderId: null }); // { status, senderId }
+    const [followingList, setFollowingList] = useState([]);
+    const [loadingFollowing, setLoadingFollowing] = useState(false);
 
     // Edit Mode State
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({
         bio: '',
         username: '',
+        full_name: '',
         // batch, campus, branch are set at registration and cannot be changed
     });
     const [avatarFile, setAvatarFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
     const fileInputRef = useRef(null);
 
+    // Use a ref to track if it's the first mount or id change
+    const isInitialMount = useRef(true);
+    const prevId = useRef(id);
+
     useEffect(() => {
         const fetchProfileAndPosts = async () => {
             if (!id) return;
-            setLoading(true);
+            
+            // Only show full page loader on initial load or user change
+            const isNewUser = prevId.current !== id;
+            if (isInitialMount.current || isNewUser) {
+                setLoading(true);
+                isInitialMount.current = false;
+                prevId.current = id;
+            } else {
+                setRefreshing(true);
+            }
+
             try {
                 // 1. Fetch Profile
                 const { data: profileData, error: profileError } = await supabase
@@ -114,10 +133,24 @@ const Profile = () => {
                     });
                 }
 
+                // 4. Fetch Following (Suggested People as per user request)
+                setLoadingFollowing(true);
+                const { data: follows, error: followError } = await supabase
+                    .from('connections')
+                    .select('friend_id, profiles:friend_id (id, full_name, avatar_url)')
+                    .eq('user_id', id)
+                    .eq('status', 'accepted');
+
+                if (!followError && follows) {
+                    setFollowingList(follows.map(f => f.profiles));
+                }
+                setLoadingFollowing(false);
+
                 // Initialize Edit Form
                 setEditForm({
                     bio: profileData.bio || '',
                     username: profileData.username || '',
+                    full_name: profileData.full_name || '',
                     // batch, campus, branch locked at registration — not editable
                 });
 
@@ -126,6 +159,7 @@ const Profile = () => {
                 setError('User not found');
             } finally {
                 setLoading(false);
+                setRefreshing(false);
             }
         };
 
@@ -295,6 +329,11 @@ const Profile = () => {
                 updates.username = editForm.username;
             }
 
+            // Only update full_name if changed and not empty
+            if (editForm.full_name && editForm.full_name !== (profile.full_name || '') && editForm.full_name.trim() !== '') {
+                updates.full_name = editForm.full_name;
+            }
+
             // If no changes besides avatar, still update avatar
             if (Object.keys(updates).length === 1 && updates.avatar_url !== profile.avatar_url) {
                 // Avatar changed, proceed
@@ -379,7 +418,7 @@ const Profile = () => {
                     <Sidebar />
 
                     {/* Main Profile Content */}
-                    <main className="flex-1 max-w-4xl w-full min-w-0">
+                    <main className="flex-1 w-full min-w-0">
 
                         {/* Cover Image & Header Info */}
                         <div className="bg-card rounded-[2rem] shadow-sm border border-border overflow-hidden relative mb-6">
@@ -450,6 +489,16 @@ const Profile = () => {
                                     {isEditing ? (
                                         <div className="space-y-4 max-w-lg mb-6">
                                             {/* Batch, Campus, and Branch are set during registration and cannot be changed */}
+                                            <div>
+                                                <label className="text-xs font-bold text-muted-foreground uppercase">Full Name</label>
+                                                <input
+                                                    type="text"
+                                                    className="w-full bg-muted border border-border rounded-xl px-4 py-2 text-sm font-medium text-foreground focus:outline-none focus:border-primary"
+                                                    value={editForm.full_name}
+                                                    onChange={e => setEditForm({ ...editForm, full_name: e.target.value })}
+                                                    placeholder="Your Full Name"
+                                                />
+                                            </div>
                                             <div>
                                                 <label className="text-xs font-bold text-muted-foreground uppercase">Bio</label>
                                                 <textarea
@@ -528,6 +577,31 @@ const Profile = () => {
                             </div>
                         )}
                     </main>
+
+                    <div className="hidden xl:block w-80 shrink-0">
+                        <div className="sticky top-20 bg-card rounded-3xl p-6 border border-border shadow-sm">
+                            <h3 className="font-black text-foreground mb-4">Suggested People</h3>
+                            {loadingFollowing ? (
+                                <div className="flex justify-center py-4">
+                                    <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                                </div>
+                            ) : followingList.length > 0 ? (
+                                <div className="space-y-4">
+                                    {followingList.slice(0, 5).map(person => (
+                                        <div key={person.id} className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate(`/profile/${person.id}`)}>
+                                            <img src={getAvatarUrl(person.full_name, person.avatar_url)} alt={person.full_name} className="w-10 h-10 rounded-full object-cover" />
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-black text-foreground truncate group-hover:text-primary transition-colors">{person.full_name}</p>
+                                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Following</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-muted-foreground font-medium italic">No suggested people yet.</p>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -568,7 +642,25 @@ const Profile = () => {
                 <div className="hidden xl:block w-80 shrink-0">
                     <div className="sticky top-20 bg-card rounded-3xl p-6 border border-border shadow-sm">
                         <h3 className="font-black text-foreground mb-4">Suggested People</h3>
-                        <p className="text-xs text-muted-foreground font-medium">Implement suggestions here...</p>
+                        {loadingFollowing ? (
+                            <div className="flex justify-center py-4">
+                                <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                            </div>
+                        ) : followingList.length > 0 ? (
+                            <div className="space-y-4">
+                                {followingList.slice(0, 5).map(person => (
+                                    <div key={person.id} className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate(`/profile/${person.id}`)}>
+                                        <img src={getAvatarUrl(person.full_name, person.avatar_url)} alt={person.full_name} className="w-10 h-10 rounded-full object-cover" />
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-black text-foreground truncate group-hover:text-primary transition-colors">{person.full_name}</p>
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Following</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-xs text-muted-foreground font-medium italic">No suggested people yet.</p>
+                        )}
                     </div>
                 </div>
             </div>

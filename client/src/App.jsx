@@ -10,6 +10,7 @@ import CreatePostModal from './components/CreatePostModal';
 import { SearchProvider } from './context/SearchContext';
 import SearchResults from './pages/SearchResults';
 import Notifications from './pages/Notifications';
+import Community from './pages/Community';
 
 function App() {
   return (
@@ -38,7 +39,8 @@ function App() {
               <Route path="/network" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
               <Route path="/jobs" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
               <Route path="/messages" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
-              <Route path="/connections" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+              <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
+              <Route path="/connections" element={<Navigate to="/community" replace />} />
               <Route path="/profile/:id" element={
                 <ProtectedRoute>
                   <Profile />
