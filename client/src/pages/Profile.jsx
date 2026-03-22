@@ -250,10 +250,26 @@ const Profile = () => {
             // 2. Update Profile in Supabase (Database)
             // Note: batch, campus, and branch are intentionally excluded — locked after registration
             const updates = {
-                username: editForm.username,
-                bio: editForm.bio,
                 avatar_url: newAvatarUrl,
             };
+
+            // Only update bio if changed
+            if (editForm.bio !== (profile.bio || '')) {
+                updates.bio = editForm.bio;
+            }
+
+            // Only update username if changed and not empty
+            if (editForm.username && editForm.username !== (profile.username || '') && editForm.username.trim() !== '') {
+                updates.username = editForm.username;
+            }
+
+            // If no changes besides avatar, still update avatar
+            if (Object.keys(updates).length === 1 && updates.avatar_url !== profile.avatar_url) {
+                // Avatar changed, proceed
+            } else if (Object.keys(updates).length === 0) {
+                // No changes, but avatar might have changed
+                updates.avatar_url = newAvatarUrl;
+            }
 
             const { error } = await supabase
                 .from('profiles')

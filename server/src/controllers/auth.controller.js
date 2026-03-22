@@ -81,16 +81,23 @@ export const updateMe = async (req, res, next) => {
       avatar_url = `${protocol}://${host}/uploads/avatars/${req.file.filename}`;
     }
 
+    // Build update object with only provided fields
+    const updates = {};
+    if (avatar_url !== undefined) updates.avatar_url = avatar_url;
+    if (bio !== undefined && bio !== '') updates.bio = bio;
+    if (username !== undefined && username !== '') updates.username = username;
+    if (batch !== undefined && batch !== '') updates.batch = batch;
+    if (campus !== undefined && campus !== '') updates.campus = campus;
+    if (branch !== undefined && branch !== '') updates.branch = branch;
+
+    // If no updates, return early
+    if (Object.keys(updates).length === 0) {
+      return res.json({ message: 'No changes to update' });
+    }
+
     const { data, error } = await supabase
       .from('profiles')
-      .update({
-        avatar_url,
-        bio,
-        username,
-        batch,
-        campus,
-        branch
-      })
+      .update(updates)
       .eq('id', userId)
       .select()
       .single();
