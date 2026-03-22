@@ -1,10 +1,10 @@
 import React from 'react';
 import ProfileHeader from './ProfileHeader';
 import StatsSection from './StatsSection';
-import ProfilePostCard from './ProfilePostCard';
+import PostCard from './PostCard';
 import { Clock } from 'lucide-react';
 
-const ProfilePending = ({ profile, posts = [], onRemoveFriend, isReceived = false, onAcceptFriend }) => {
+const ProfilePending = ({ profile, posts = [], onRemoveFriend, isReceived = false, onAcceptFriend, toggleLike, addComment, fetchComments }) => {
     if (!profile) {
         return (
             <div className="min-h-screen bg-background py-12 px-4 flex items-center justify-center">
@@ -19,17 +19,10 @@ const ProfilePending = ({ profile, posts = [], onRemoveFriend, isReceived = fals
         following: 0
     };
 
-    // Create dummy posts for blur effect if no posts
-    const displayPosts = posts.length > 0 ? posts : [
-        { id: 1, content: 'Sample post...', likes: 0, commentCount: 0, visibility: 'All' },
-        { id: 2, content: 'Sample post...', likes: 0, commentCount: 0, visibility: 'Custom' },
-        { id: 3, content: 'Sample post...', likes: 0, commentCount: 0, visibility: 'All' }
-    ];
-
     return (
-        <div className="min-h-screen bg-background py-12 px-4">
+        <div className="min-h-screen bg-background py-6 px-4">
             <div className="max-w-5xl mx-auto">
-                <div className="bg-card rounded-3xl shadow-xl border border-border overflow-hidden">
+                <div className="bg-card rounded-[2.5rem] shadow-sm border border-border overflow-hidden mb-6">
                     {/* Header with status */}
                     <div className="relative">
                         <ProfileHeader
@@ -47,32 +40,32 @@ const ProfilePending = ({ profile, posts = [], onRemoveFriend, isReceived = fals
                     <div className="bg-amber-500/10 border-b border-amber-500/20 px-8 py-3 flex items-center gap-3">
                         <Clock className="w-4 h-4 text-amber-500" />
                         <span className="text-sm font-bold text-amber-700 uppercase tracking-wider">
-                            {isReceived ? 'They want to be your friend!' : 'Friend Request Sent'}
+                            {isReceived ? 'They want to follow you!' : 'Follow Request Sent'}
                         </span>
                     </div>
 
                     <StatsSection stats={stats} />
+                </div>
 
-                    <div className="px-8 py-6">
-                        <h2 className="text-2xl font-bold text-foreground mb-6">Posts</h2>
-                        <div className="relative">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 blur-sm pointer-events-none opacity-50">
-                                {displayPosts.slice(0, 3).map((post) => (
-                                    <ProfilePostCard key={post.id} post={post} />
-                                ))}
-                            </div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="bg-card/95 backdrop-blur-sm rounded-2xl px-8 py-6 shadow-xl border border-border text-center">
-                                    <h3 className="text-xl font-bold text-foreground mb-2">
-                                        {isReceived ? 'Accept to View Posts' : 'Pending Approval'}
-                                    </h3>
-                                    <p className="text-muted-foreground text-sm">
-                                        {isReceived ? `Accept ${profile.full_name}'s request to see their posts.` : `Waiting for ${profile.full_name} to accept your request.`}
-                                    </p>
-                                </div>
-                            </div>
+                {/* Posts Section */}
+                <div className="space-y-6 max-w-2xl mx-auto">
+                    <h2 className="text-2xl font-black text-foreground mb-6">Posts</h2>
+                    {posts.length > 0 ? (
+                        posts.map((post) => (
+                            <PostCard 
+                                key={post.id} 
+                                post={post} 
+                                toggleLike={toggleLike}
+                                addComment={addComment}
+                                fetchComments={fetchComments}
+                            />
+                        ))
+                    ) : (
+                        <div className="bg-card p-12 rounded-[2rem] border border-border text-center">
+                            <h3 className="text-lg font-bold text-foreground mb-1">No posts yet</h3>
+                            <p className="text-muted-foreground text-sm">When {profile.full_name} posts, you'll see it here.</p>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>

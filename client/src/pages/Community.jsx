@@ -22,23 +22,22 @@ const Community = () => {
       if (!user) return;
       setLoading(true);
       try {
-        // 1. Get accepted connections
-        const { data: connections, error: connError } = await supabase
+        // 1. Get accepted connections (following and followers)
+        // For a simple "following" feed, we only need people the current user is following.
+        const { data: followings, error: connError } = await supabase
           .from('connections')
-          .select('friend_id, user_id')
-          .eq('status', 'accepted')
-          .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
+          .select('friend_id')
+          .eq('user_id', user.id)
+          .eq('status', 'accepted');
 
         if (connError) throw connError;
 
-        const friendIds = connections.map(c => 
-          c.user_id === user.id ? c.friend_id : c.user_id
-        );
+        const followingIds = followings.map(f => f.friend_id);
 
         // Always include self
-        friendIds.push(user.id);
+        followingIds.push(user.id);
 
-        // 2. Fetch posts from friends
+        // 2. Fetch posts from following
         const { data: postsData, error: postsError } = await supabase
           .from('posts')
           .select(`
@@ -54,7 +53,7 @@ const Community = () => {
               profiles:user_id (full_name, avatar_url)
             )
           `)
-          .in('user_id', friendIds)
+          .in('user_id', followingIds)
           .order('created_at', { ascending: false });
 
         if (postsError) throw postsError;

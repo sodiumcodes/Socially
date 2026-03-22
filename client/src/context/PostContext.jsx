@@ -256,63 +256,53 @@ export const PostProvider = ({ children }) => {
     try {
       if (!user) return;
 
-      const currentPost = posts.find(p => p.id === postId);
-
-      if (currentPost) {
-        const optimisticSaved = !currentPost.isSaved;
-        setPosts(current => current.map(p => {
-          if (p.id === postId) {
-            return {
-              ...p,
-              isSaved: optimisticSaved
-            };
-          }
-          return p;
-        }));
-
-        const { error } = optimisticSaved 
-          ? await supabase.from('saved_posts').insert({ user_id: user.id, post_id: postId })
-          : await supabase.from('saved_posts').delete().match({ user_id: user.id, post_id: postId });
-
-        if (error) {
-          if (error.message.includes('relation "saved_posts" does not exist')) {
-            alert("The 'saved_posts' feature is not available yet. Please run the database migration.");
-            // Revert optimistic update
-            setPosts(current => current.map(p => {
-              if (p.id === postId) return { ...p, isSaved: !optimisticSaved };
-              return p;
-            }));
-            return;
-          }
-          throw error;
-        }
-        bumpRefresh();
-        return;
-      }
-
-      // If not in feed, check DB then toggle
+      // 1. Check current state in DB to be absolutely sure
       const { data: existing, error: fetchError } = await supabase
         .from('saved_posts')
-        .select('user_id')
+        .select('id')
         .eq('user_id', user.id)
         .eq('post_id', postId)
         .maybeSingle();
 
-      if (fetchError) {
-        if (fetchError.message.includes('relation "saved_posts" does not exist')) {
-          alert("The 'saved_posts' feature is not available yet. Please run the database migration.");
-          return;
-        }
+      if (fetchError && !fetchError.message.includes('relation "saved_posts" does not exist')) {
         throw fetchError;
       }
 
-      const willSave = !existing;
+      const isCurrentlySaved = !!existing;
+      const willSave = !isCurrentlySaved;
+
+      // 2. Optimistically update UI if post exists in current feed
+      setPosts(current => current.map(p => {
+        if (p.id === postId) {
+          return { ...p, isSaved: willSave };
+        }
+        return p;
+      }));
+
+      // 3. Perform DB operation
+      let error;
       if (willSave) {
-        await supabase.from('saved_posts').insert({ user_id: user.id, post_id: postId });
+        const result = await supabase.from('saved_posts').insert({ user_id: user.id, post_id: postId });
+        error = result.error;
       } else {
-        await supabase.from('saved_posts').delete().match({ user_id: user.id, post_id: postId });
+        const result = await supabase.from('saved_posts').delete().eq('user_id', user.id).eq('post_id', postId);
+        error = result.error;
       }
-      await fetchFeed();
+
+      if (error) {
+        if (error.message.includes('relation "saved_posts" does not exist')) {
+          alert("The 'saved_posts' feature is not available yet. Please run the database migration.");
+          // Revert optimistic update
+          setPosts(current => current.map(p => {
+            if (p.id === postId) return { ...p, isSaved: isCurrentlySaved };
+            return p;
+          }));
+          return;
+        }
+        throw error;
+      }
+
+      bumpRefresh();
     } catch (err) {
       console.error('Save failed:', err);
       await fetchFeed();

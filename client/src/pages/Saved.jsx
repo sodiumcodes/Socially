@@ -13,7 +13,7 @@ import { normalizeVisibility } from '../utils/posts';
 
 const Saved = () => {
   const { user } = useAuth();
-  const { toggleLike, addComment, fetchComments } = usePosts();
+  const { toggleLike, addComment, fetchComments, toggleSave } = usePosts();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -131,7 +131,33 @@ const Saved = () => {
   const handleToggleSave = async (postId) => {
     // Optimistically remove from list
     setPosts(prev => prev.filter(p => p.id !== postId));
-    await toggleSave(postId);
+    try {
+      await toggleSave(postId);
+    } catch (err) {
+      console.error('Unsave failed:', err);
+      // Optionally re-fetch if it fails to ensure consistency
+      fetchSavedPosts();
+    }
+  };
+
+  const handleToggleLike = async (postId) => {
+    try {
+      // Optimistically update local state
+      setPosts(current => current.map(p => {
+        if (p.id === postId) {
+          const newIsLiked = !p.isLiked;
+          return {
+            ...p,
+            isLiked: newIsLiked,
+            likes: newIsLiked ? p.likes + 1 : Math.max(0, p.likes - 1)
+          };
+        }
+        return p;
+      }));
+      await toggleLike(postId);
+    } catch (err) {
+      console.error('Like failed in Saved:', err);
+    }
   };
 
   const fetchCommentsForSaved = async (postId) => {
@@ -182,7 +208,7 @@ const Saved = () => {
                   key={post.id}
                   post={post}
                   addComment={addComment}
-                  toggleLike={toggleLike}
+                  toggleLike={handleToggleLike}
                   toggleSave={handleToggleSave}
                   fetchComments={fetchCommentsForSaved}
                 />

@@ -220,14 +220,14 @@ const Profile = () => {
         }
     }, [fetchComments]);
 
-    const handleAddFriend = async () => {
+    const handleFollowRequest = async () => {
         try {
             const { data, error } = await supabase
                 .from('connections')
                 .insert({
                     user_id: currentUser.id,
                     friend_id: id,
-                    status: 'pending' // Use 'pending' for initial request
+                    status: 'pending' 
                 })
                 .select()
                 .single();
@@ -240,21 +240,19 @@ const Profile = () => {
                 .insert({
                     user_id: id,
                     sender_id: currentUser.id,
-                    type: 'friend_request',
-                    content: `${currentUser.user_metadata?.full_name || 'Someone'} sent you a friend request`,
+                    type: 'friend_request', // Keep type for now to avoid breaking other things
+                    content: `${currentUser.user_metadata?.full_name || 'Someone'} sent you a follow request`,
                     data: { connection_id: data.id }
                 });
 
             setFriendship({ status: 'pending', senderId: currentUser.id });
-            // Refresh stats since counts might have changed if we are using "pending" in counts (though usually only "accepted")
-            // But let's refresh to be safe and consistent.
         } catch (err) {
-            console.error("Failed to add friend:", err);
-            alert("Failed to add friend");
+            console.error("Failed to follow:", err);
+            alert("Failed to send follow request");
         }
     };
 
-    const handleAcceptFriend = async () => {
+    const handleAcceptFollow = async () => {
         try {
             // 1. Update Connection
             const { error: connError } = await supabase
@@ -294,12 +292,12 @@ const Profile = () => {
                 following: followings?.length || 0
             }));
         } catch (err) {
-            console.error("Failed to accept friend:", err);
-            alert("Failed to accept friend");
+            console.error("Failed to accept follow request:", err);
+            alert("Failed to accept follow request");
         }
     };
 
-    const handleRemoveFriend = async () => {
+    const handleUnfollow = async () => {
         try {
             // 1. Delete Connection (Try both directions)
             await supabase
@@ -335,8 +333,8 @@ const Profile = () => {
                 following: followings?.length || 0
             }));
         } catch (err) {
-            console.error("Failed to remove friend:", err);
-            alert("Failed to remove friend");
+            console.error("Failed to unfollow:", err);
+            alert("Failed to unfollow");
         }
     };
 
@@ -673,7 +671,7 @@ const Profile = () => {
                         <ProfileFriendAdded
                             profile={profile}
                             posts={posts}
-                            onRemoveFriend={handleRemoveFriend}
+                            onRemoveFriend={handleUnfollow}
                             toggleLike={toggleLike}
                             addComment={addComment}
                             fetchComments={fetchCommentsForProfile}
@@ -682,15 +680,21 @@ const Profile = () => {
                         <ProfilePending
                             profile={profile}
                             posts={posts}
-                            onRemoveFriend={handleRemoveFriend}
+                            onRemoveFriend={handleUnfollow}
                             isReceived={friendship.senderId !== currentUser.id}
-                            onAcceptFriend={handleAcceptFriend}
+                            onAcceptFriend={handleAcceptFollow}
+                            toggleLike={toggleLike}
+                            addComment={addComment}
+                            fetchComments={fetchCommentsForProfile}
                         />
                     ) : (
                         <ProfileNotFriend
                             profile={profile}
                             posts={posts}
-                            onAddFriend={handleAddFriend}
+                            onAddFriend={handleFollowRequest}
+                            toggleLike={toggleLike}
+                            addComment={addComment}
+                            fetchComments={fetchCommentsForProfile}
                         />
                     )}
                 </main>

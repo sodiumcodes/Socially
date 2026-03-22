@@ -75,8 +75,6 @@ const Notifications = () => {
             if (connError) throw connError;
 
             // 2. Mark notification as read or delete it (as per UX preference)
-            // Let's delete it for a cleaner list, or mark as read? 
-            // The user said "the profile must be visible" after accept.
             const { error: notifError } = await supabase
                 .from('notifications')
                 .delete()
@@ -86,8 +84,8 @@ const Notifications = () => {
 
             setNotifications(prev => prev.filter(n => n.id !== notification.id));
         } catch (err) {
-            console.error('Failed to accept:', err);
-            alert('Failed to accept request');
+            console.error('Failed to accept follow request:', err);
+            alert('Failed to accept follow request');
         }
     };
 
@@ -108,7 +106,8 @@ const Notifications = () => {
 
             setNotifications(prev => prev.filter(n => n.id !== notification.id));
         } catch (err) {
-            console.error('Failed to decline:', err);
+            console.error('Failed to decline follow request:', err);
+            alert('Failed to decline follow request');
         }
     };
 
