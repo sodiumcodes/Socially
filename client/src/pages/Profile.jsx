@@ -645,7 +645,7 @@ const Profile = () => {
                                             <img src={getAvatarUrl(person.full_name, person.avatar_url)} alt={person.full_name} className="w-10 h-10 rounded-full object-cover" />
                                             <div className="min-w-0">
                                                 <p className="text-sm font-black text-foreground truncate group-hover:text-primary transition-colors">{person.full_name}</p>
-                                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Following</p>
+                                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Connection</p>
                                             </div>
                                         </div>
                                     ))}
@@ -671,6 +671,7 @@ const Profile = () => {
                         <ProfileFriendAdded
                             profile={profile}
                             posts={posts}
+                            stats={stats}
                             onRemoveFriend={handleUnfollow}
                             toggleLike={toggleLike}
                             addComment={addComment}
@@ -680,6 +681,7 @@ const Profile = () => {
                         <ProfilePending
                             profile={profile}
                             posts={posts}
+                            stats={stats}
                             onRemoveFriend={handleUnfollow}
                             isReceived={friendship.senderId !== currentUser.id}
                             onAcceptFriend={handleAcceptFollow}
@@ -691,6 +693,7 @@ const Profile = () => {
                         <ProfileNotFriend
                             profile={profile}
                             posts={posts}
+                            stats={stats}
                             onAddFriend={handleFollowRequest}
                             toggleLike={toggleLike}
                             addComment={addComment}

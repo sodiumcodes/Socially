@@ -4,7 +4,7 @@ import StatsSection from './StatsSection';
 import PostCard from './PostCard';
 import { usePosts } from '../context/PostContext';
 
-const ProfileNotFriend = ({ profile, posts = [], onAddFriend, toggleLike, addComment, fetchComments }) => {
+const ProfileNotFriend = ({ profile, posts = [], stats = { posts: 0, followers: 0, following: 0 }, onAddFriend, toggleLike, addComment, fetchComments }) => {
     if (!profile) {
         return (
             <div className="min-h-screen bg-background py-12 px-4 flex items-center justify-center">
@@ -12,12 +12,6 @@ const ProfileNotFriend = ({ profile, posts = [], onAddFriend, toggleLike, addCom
             </div>
         );
     }
-
-    const stats = {
-        posts: posts.length,
-        followers: 0, // Should be passed from parent
-        following: 0  // Should be passed from parent
-    };
 
     return (
         <div className="min-h-screen bg-background py-6 px-4">

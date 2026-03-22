@@ -6,6 +6,7 @@ import PostCard from './PostCard';
 const ProfileFriendAdded = ({
     profile,
     posts = [],
+    stats = { posts: 0, followers: 0, following: 0 },
     onRemoveFriend,
     toggleLike,
     addComment,
@@ -18,12 +19,6 @@ const ProfileFriendAdded = ({
             </div>
         );
     }
-
-    const stats = {
-        posts: posts.length,
-        followers: 0, // TODO: Implement followers count from database
-        following: 0  // TODO: Implement following count from database
-    };
 
     return (
         <div className="min-h-screen bg-background py-12 px-4">
