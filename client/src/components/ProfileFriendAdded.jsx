@@ -12,7 +12,9 @@ const ProfileFriendAdded = ({
     addComment,
     fetchComments,
     onFollowersClick,
-    onFollowingClick
+    onFollowingClick,
+    isFollower,
+    onRemoveFollower
 }) => {
     if (!profile) {
         return (
@@ -33,6 +35,8 @@ const ProfileFriendAdded = ({
                         showRemoveButton={true}
                         isFriend={true}
                         onRemoveFriend={onRemoveFriend}
+                        isFollower={isFollower}
+                        onRemoveFollower={onRemoveFollower}
                     />
 
                     {/* Stats Section */}

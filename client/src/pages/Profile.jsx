@@ -25,7 +25,8 @@ const Profile = () => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
-    const [friendship, setFriendship] = useState({ status: null, senderId: null }); // { status, senderId }
+    const [followingStatus, setFollowingStatus] = useState({ status: null, senderId: null }); // I follow them
+    const [followerStatus, setFollowerStatus] = useState({ status: null, senderId: null }); // They follow me
     const [followingList, setFollowingList] = useState([]);
     const [loadingFollowing, setLoadingFollowing] = useState(false);
     const [stats, setStats] = useState({ posts: 0, followers: 0, following: 0 });
@@ -134,17 +135,32 @@ const Profile = () => {
 
                 setPosts(mappedPosts);
 
-                // 3. Fetch Friendship Status (if not own profile)
+                // 3. Fetch Follow Statuses (if not own profile)
                 if (currentUser && currentUser.id !== id) {
-                    const { data: connectionData } = await supabase
+                    // Check if I follow them
+                    const { data: followData } = await supabase
                         .from('connections')
                         .select('status, user_id')
-                        .or(`and(user_id.eq.${currentUser.id},friend_id.eq.${id}),and(user_id.eq.${id},friend_id.eq.${currentUser.id})`)
+                        .eq('user_id', currentUser.id)
+                        .eq('friend_id', id)
                         .maybeSingle();
 
-                    setFriendship({
-                        status: connectionData?.status || null,
-                        senderId: connectionData?.user_id || null
+                    setFollowingStatus({
+                        status: followData?.status || null,
+                        senderId: followData?.user_id || null
+                    });
+
+                    // Check if they follow me
+                    const { data: followerData } = await supabase
+                        .from('connections')
+                        .select('status, user_id')
+                        .eq('user_id', id)
+                        .eq('friend_id', currentUser.id)
+                        .maybeSingle();
+
+                    setFollowerStatus({
+                        status: followerData?.status || null,
+                        senderId: followerData?.user_id || null
                     });
                 }
 
@@ -234,7 +250,7 @@ const Profile = () => {
         }
     }, [fetchComments]);
 
-    const handleFollowRequest = async () => {
+    const handleFollow = async () => {
         try {
             const { data, error } = await supabase
                 .from('connections')
@@ -248,36 +264,65 @@ const Profile = () => {
 
             if (error) throw error;
 
-            // Send Notification
             await supabase
                 .from('notifications')
                 .insert({
                     user_id: id,
                     sender_id: currentUser.id,
-                    type: 'friend_request', // Keep type for now to avoid breaking other things
+                    type: 'friend_request',
                     content: `${currentUser.user_metadata?.full_name || 'Someone'} sent you a follow request`,
                     data: { connection_id: data.id }
                 });
 
-            setFriendship({ status: 'pending', senderId: currentUser.id });
+            setFollowingStatus({ status: 'pending', senderId: currentUser.id });
         } catch (err) {
             console.error("Failed to follow:", err);
             alert("Failed to send follow request");
         }
     };
 
+    const handleUnfollow = async () => {
+        try {
+            await supabase
+                .from('connections')
+                .delete()
+                .eq('user_id', currentUser.id)
+                .eq('friend_id', id);
+
+            setFollowingStatus({ status: null, senderId: null });
+            refreshStats();
+        } catch (err) {
+            console.error("Failed to unfollow:", err);
+            alert("Failed to unfollow");
+        }
+    };
+
+    const handleRemoveFollower = async () => {
+        try {
+            await supabase
+                .from('connections')
+                .delete()
+                .eq('user_id', id)
+                .eq('friend_id', currentUser.id);
+
+            setFollowerStatus({ status: null, senderId: null });
+            refreshStats();
+        } catch (err) {
+            console.error("Failed to remove follower:", err);
+            alert("Failed to remove follower");
+        }
+    };
+
     const handleAcceptFollow = async () => {
         try {
-            // 1. Update Connection
             const { error: connError } = await supabase
                 .from('connections')
                 .update({ status: 'accepted' })
-                .eq('friend_id', currentUser.id)
-                .eq('user_id', id);
+                .eq('user_id', id)
+                .eq('friend_id', currentUser.id);
 
             if (connError) throw connError;
 
-            // 2. Delete Notification
             await supabase
                 .from('notifications')
                 .delete()
@@ -285,71 +330,32 @@ const Profile = () => {
                 .eq('sender_id', id)
                 .eq('type', 'friend_request');
 
-            setFriendship(prev => ({ ...prev, status: 'accepted' }));
-            
-            // Re-fetch stats to update counts immediately
-            const { data: followings } = await supabase
-                .from('connections')
-                .select('id')
-                .eq('user_id', id)
-                .eq('status', 'accepted');
-
-            const { data: followers } = await supabase
-                .from('connections')
-                .select('id')
-                .eq('friend_id', id)
-                .eq('status', 'accepted');
-
-            setStats(prev => ({
-                ...prev,
-                followers: followers?.length || 0,
-                following: followings?.length || 0
-            }));
+            setFollowerStatus(prev => ({ ...prev, status: 'accepted' }));
+            refreshStats();
         } catch (err) {
             console.error("Failed to accept follow request:", err);
             alert("Failed to accept follow request");
         }
     };
 
-    const handleUnfollow = async () => {
-        try {
-            // 1. Delete Connection (Try both directions)
-            await supabase
-                .from('connections')
-                .delete()
-                .or(`and(user_id.eq.${currentUser.id},friend_id.eq.${id}),and(user_id.eq.${id},friend_id.eq.${currentUser.id})`);
+    const refreshStats = async () => {
+        const { data: followings } = await supabase
+            .from('connections')
+            .select('id')
+            .eq('user_id', id)
+            .eq('status', 'accepted');
 
-            // 2. Delete Notifications
-            await supabase
-                .from('notifications')
-                .delete()
-                .eq('type', 'friend_request')
-                .or(`and(user_id.eq.${currentUser.id},sender_id.eq.${id}),and(user_id.eq.${id},sender_id.eq.${currentUser.id})`);
+        const { data: followers } = await supabase
+            .from('connections')
+            .select('id')
+            .eq('friend_id', id)
+            .eq('status', 'accepted');
 
-            setFriendship({ status: null, senderId: null });
-
-            // Re-fetch stats to update counts immediately
-            const { data: followings } = await supabase
-                .from('connections')
-                .select('id')
-                .eq('user_id', id)
-                .eq('status', 'accepted');
-
-            const { data: followers } = await supabase
-                .from('connections')
-                .select('id')
-                .eq('friend_id', id)
-                .eq('status', 'accepted');
-
-            setStats(prev => ({
-                ...prev,
-                followers: followers?.length || 0,
-                following: followings?.length || 0
-            }));
-        } catch (err) {
-            console.error("Failed to unfollow:", err);
-            alert("Failed to unfollow");
-        }
+        setStats(prev => ({
+            ...prev,
+            followers: followers?.length || 0,
+            following: followings?.length || 0
+        }));
     };
 
     const handleFileChange = (e) => {
@@ -462,7 +468,7 @@ const Profile = () => {
 
     const isOwnProfile = currentUser && profile && currentUser.id === profile.id;
 
-    const isFriend = friendship.status === 'accepted';
+    const isFriend = followingStatus.status === 'accepted';
 
     if (loading) return (
         <div className="min-h-screen bg-background flex items-center justify-center">
@@ -706,32 +712,41 @@ const Profile = () => {
                             fetchComments={fetchCommentsForProfile}
                             onFollowersClick={openFollowers}
                             onFollowingClick={openFollowing}
+                            // Follower management
+                            isFollower={followerStatus.status === 'accepted'}
+                            onRemoveFollower={handleRemoveFollower}
                         />
-                    ) : friendship.status === 'pending' ? (
+                    ) : followingStatus.status === 'pending' ? (
                         <ProfilePending
                             profile={profile}
                             posts={posts}
                             stats={stats}
                             onRemoveFriend={handleUnfollow}
-                            isReceived={friendship.senderId !== currentUser.id}
+                            isReceived={followingStatus.senderId !== currentUser.id}
                             onAcceptFriend={handleAcceptFollow}
                             toggleLike={toggleLike}
                             addComment={addComment}
                             fetchComments={fetchCommentsForProfile}
                             onFollowersClick={openFollowers}
                             onFollowingClick={openFollowing}
+                            // Follower management
+                            isFollower={followerStatus.status === 'accepted'}
+                            onRemoveFollower={handleRemoveFollower}
                         />
                     ) : (
                         <ProfileNotFriend
                             profile={profile}
                             posts={posts}
                             stats={stats}
-                            onAddFriend={handleFollowRequest}
+                            onAddFriend={handleFollow}
                             toggleLike={toggleLike}
                             addComment={addComment}
                             fetchComments={fetchCommentsForProfile}
                             onFollowersClick={openFollowers}
                             onFollowingClick={openFollowing}
+                            // Follower management
+                            isFollower={followerStatus.status === 'accepted'}
+                            onRemoveFollower={handleRemoveFollower}
                         />
                     )}
 

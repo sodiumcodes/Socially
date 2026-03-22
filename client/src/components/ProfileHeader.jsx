@@ -10,7 +10,10 @@ const ProfileHeader = ({
     onRemoveFriend,
     isPendingReceived = false,
     onAcceptFriend,
-    onDeclineFriend
+    onDeclineFriend,
+    // New independent follower management props
+    isFollower = false,
+    onRemoveFollower
 }) => {
     if (!profile) return null;
 
@@ -90,38 +93,50 @@ const ProfileHeader = ({
                         </div>
                     </div>
 
-                    {/* Right: Action Button */}
-                    {isPendingReceived ? (
-                        <div className="flex items-center gap-2 mt-4">
+                    {/* Right: Action Buttons */}
+                    <div className="flex flex-col items-end gap-2 mt-4">
+                        {isPendingReceived ? (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={onDeclineFriend}
+                                    className="p-2.5 bg-muted text-muted-foreground rounded-full hover:bg-muted/80 transition-all duration-200 shadow-sm border border-border"
+                                    title="Decline Follow Request"
+                                >
+                                    <X size={20} fontWeight="bold" />
+                                </button>
+                                <button
+                                    onClick={onAcceptFriend}
+                                    className="px-6 py-2.5 bg-gradient-to-r from-medium-slate-blue-500 to-indigo-velvet-600 text-white font-semibold rounded-full shadow-lg hover:from-medium-slate-blue-600 hover:to-indigo-velvet-700 transition-all duration-200"
+                                >
+                                    Accept Follow
+                                </button>
+                            </div>
+                        ) : showRemoveButton ? (
                             <button
-                                onClick={onDeclineFriend}
-                                className="p-2.5 bg-muted text-muted-foreground rounded-full hover:bg-muted/80 transition-all duration-200 shadow-sm border border-border"
-                                title="Decline Friend Request"
+                                onClick={onRemoveFriend}
+                                className="px-6 py-2.5 bg-gradient-to-r from-cayenne-red-500 to-tiger-orange-600 text-white font-semibold rounded-full shadow-lg hover:from-cayenne-red-600 hover:to-tiger-orange-600 transition-all duration-200"
                             >
-                                <X size={20} fontWeight="bold" />
+                                Unfollow
                             </button>
+                        ) : (
                             <button
-                                onClick={onAcceptFriend}
+                                onClick={onAddFriend}
                                 className="px-6 py-2.5 bg-gradient-to-r from-medium-slate-blue-500 to-indigo-velvet-600 text-white font-semibold rounded-full shadow-lg hover:from-medium-slate-blue-600 hover:to-indigo-velvet-700 transition-all duration-200"
                             >
-                                Accept Request
+                                Follow
                             </button>
-                        </div>
-                    ) : showRemoveButton ? (
-                        <button
-                            onClick={onRemoveFriend}
-                            className="mt-4 px-6 py-2.5 bg-gradient-to-r from-cayenne-red-500 to-tiger-orange-600 text-white font-semibold rounded-full shadow-lg hover:from-cayenne-red-600 hover:to-tiger-orange-600 transition-all duration-200"
-                        >
-                            Unfollow
-                        </button>
-                    ) : (
-                        <button
-                            onClick={onAddFriend}
-                            className="mt-4 px-6 py-2.5 bg-gradient-to-r from-medium-slate-blue-500 to-indigo-velvet-600 text-white font-semibold rounded-full shadow-lg hover:from-medium-slate-blue-600 hover:to-indigo-velvet-700 transition-all duration-200"
-                        >
-                            Follow
-                        </button>
-                    )}
+                        )}
+
+                        {/* Independent Remove Follower Button */}
+                        {isFollower && (
+                            <button
+                                onClick={onRemoveFollower}
+                                className="px-4 py-1.5 bg-muted text-muted-foreground text-xs font-bold rounded-full border border-border hover:bg-muted/80 transition-all"
+                            >
+                                Remove Follower
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
