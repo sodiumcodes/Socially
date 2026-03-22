@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, MessageCircle, Share2, Bookmark, AlertTriangle, Send, MoreHorizontal, Users, Globe, Trash2, Edit2, CornerDownRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -34,7 +35,8 @@ const PostCard = ({ post, setShowReport, addComment, toggleLike, fetchComments }
     if (e.key === 'Enter') handleCreateComment();
   };
 
-  const isOwner = user?.id === post.author.id;
+  const authorId = post.author?.id;
+  const isOwner = user?.id === authorId || user?.id === post.userId;
 
   // Organize comments into a tree
   const organizeComments = (comments) => {
@@ -64,45 +66,79 @@ const PostCard = ({ post, setShowReport, addComment, toggleLike, fetchComments }
     >
       <div className="p-6">
         <div className="flex justify-between items-center mb-5">
-          <div className="flex gap-3 items-center">
-            <div className="relative">
-              <img src={post.author.avatar} className="w-10 h-10 rounded-full object-cover" alt="" />
-              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-card rounded-full" />
-            </div>
-            <div>
-              <h4 className="font-bold text-foreground text-[13px] tracking-tight">{post.author.name}</h4>
-              <div className="flex items-center flex-wrap gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">
-                <span>{post.timestamp}</span>
-                <span className="text-border">•</span>
-                <span className="flex items-center gap-1">
-                  {(() => {
-                    const vis = post.visibility;
-
-                    // 1. Handle Public States
-                    const isPublic = !vis || vis === 'public' || vis === 'null';
-                    if (isPublic) return <><Globe size={10} /> All</>;
-
-                    // 2. Handle Legacy Strings
-                    if (typeof vis === 'string') {
-                      if (vis === 'campus') return <><Users size={10} /> Campus</>;
-                      return <><Globe size={10} /> All</>; // Fallback
-                    }
-
-                    // 3. Handle Structured Selections
-                    const count = (vis.batches?.length || 0) + (vis.campuses?.length || 0) + (vis.branches?.length || 0);
-                    if (count === 0) return <><Globe size={10} /> All</>;
-
-                    return <><Users size={10} /> Custom</>;
-                  })()}
-                </span>
-                {post.category && (
-                  <>
+          <div className="flex gap-3 items-center min-w-0 flex-1">
+            {authorId ? (
+              <Link
+                to={`/profile/${authorId}`}
+                className="flex gap-3 items-center min-w-0 rounded-xl -m-1 p-1 pr-2 hover:bg-muted/50 transition-colors"
+              >
+                <div className="relative shrink-0">
+                  <img src={post.author.avatar} className="w-10 h-10 rounded-full object-cover" alt="" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-card rounded-full" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="font-bold text-foreground text-[13px] tracking-tight">{post.author.name}</h4>
+                  <div className="flex items-center flex-wrap gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">
+                    <span>{post.timestamp}</span>
                     <span className="text-border">•</span>
-                    <span className="text-primary bg-primary/10 px-1.5 py-0.5 rounded-md tracking-tight normal-case font-bold">{post.category}</span>
-                  </>
-                )}
-              </div>
-            </div>
+                    <span className="flex items-center gap-1">
+                      {(() => {
+                        const vis = post.visibility;
+                        const isPublic = !vis || vis === 'public' || vis === 'null';
+                        if (isPublic) return <><Globe size={10} /> All</>;
+                        if (typeof vis === 'string') {
+                          if (vis === 'campus') return <><Users size={10} /> Campus</>;
+                          return <><Globe size={10} /> All</>;
+                        }
+                        const count = (vis.batches?.length || 0) + (vis.campuses?.length || 0) + (vis.branches?.length || 0);
+                        if (count === 0) return <><Globe size={10} /> All</>;
+                        return <><Users size={10} /> Custom</>;
+                      })()}
+                    </span>
+                    {post.category && (
+                      <>
+                        <span className="text-border">•</span>
+                        <span className="text-primary bg-primary/10 px-1.5 py-0.5 rounded-md tracking-tight normal-case font-bold">{post.category}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ) : (
+              <>
+                <div className="relative shrink-0">
+                  <img src={post.author.avatar} className="w-10 h-10 rounded-full object-cover" alt="" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-card rounded-full" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="font-bold text-foreground text-[13px] tracking-tight">{post.author.name}</h4>
+                  <div className="flex items-center flex-wrap gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">
+                    <span>{post.timestamp}</span>
+                    <span className="text-border">•</span>
+                    <span className="flex items-center gap-1">
+                      {(() => {
+                        const vis = post.visibility;
+                        const isPublic = !vis || vis === 'public' || vis === 'null';
+                        if (isPublic) return <><Globe size={10} /> All</>;
+                        if (typeof vis === 'string') {
+                          if (vis === 'campus') return <><Users size={10} /> Campus</>;
+                          return <><Globe size={10} /> All</>;
+                        }
+                        const count = (vis.batches?.length || 0) + (vis.campuses?.length || 0) + (vis.branches?.length || 0);
+                        if (count === 0) return <><Globe size={10} /> All</>;
+                        return <><Users size={10} /> Custom</>;
+                      })()}
+                    </span>
+                    {post.category && (
+                      <>
+                        <span className="text-border">•</span>
+                        <span className="text-primary bg-primary/10 px-1.5 py-0.5 rounded-md tracking-tight normal-case font-bold">{post.category}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
           <div className="flex gap-1">
             {isOwner && (

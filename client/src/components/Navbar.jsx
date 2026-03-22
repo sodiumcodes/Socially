@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Search, Bell, ChevronDown, Grid, Layout, Command, Filter,
-  Compass, Users, Briefcase, PlusCircle, MessageCircle, User, LogOut,
+  Home, Users, Briefcase, PlusCircle, MessageCircle, User, LogOut,
   GraduationCap, Building2, MapPin, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,7 +15,7 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('Explore');
+  const [activeTab, setActiveTab] = useState('Feed');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
@@ -64,6 +64,13 @@ const Navbar = () => {
     };
   }, [user]);
 
+  React.useEffect(() => {
+    const path = location.pathname;
+    if (path === '/feed' || path === '/') setActiveTab('Feed');
+    else if (path.startsWith('/search')) setActiveTab('Feed');
+    else if (path.startsWith('/connections')) setActiveTab('Communities');
+  }, [location.pathname]);
+
   const BATCHES = ['2023', '2024', '2025'];
   const CAMPUSES = ['Bengaluru', 'Pune', 'Noida', 'Lucknow', 'Patna', 'Indore', 'Online'];
   const BRANCHES = ['School of Technology', 'School of Management', 'School of Health'];
@@ -108,15 +115,15 @@ const Navbar = () => {
 
         {/* 2. Central Navigation - Fills the "Empty" space */}
         <div className="hidden lg:flex items-center bg-muted/50 p-1 rounded-2xl border border-border">
-          <Link to="/feed">
-            <TabItem
-              icon={<Compass size={18} />}
-              label="Explore"
-              active={activeTab === 'Explore'}
-              onClick={() => setActiveTab('Explore')}
-            />
-          </Link>
           <TabItem
+            to="/feed"
+            icon={<Home size={18} />}
+            label="Feed"
+            active={activeTab === 'Feed'}
+            onClick={() => setActiveTab('Feed')}
+          />
+          <TabItem
+            to="/connections"
             icon={<Users size={18} />}
             label="Communities"
             active={activeTab === 'Communities'}
@@ -319,18 +326,30 @@ const Navbar = () => {
 
 /* --- Refined Internal Components --- */
 
-const TabItem = ({ icon, label, active, onClick }) => (
-  <button
-    onClick={onClick}
-    className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition-all ${active
-      ? 'bg-card text-primary shadow-sm shadow-primary/10 border border-border'
-      : 'text-icon/85 hover:text-primary'
-      }`}
-  >
-    {icon}
-    <span className={active ? 'block' : 'hidden xl:block'}>{label}</span>
-  </button>
-);
+const TabItem = ({ icon, label, active, onClick, to }) => {
+  const className = `flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition-all ${active
+    ? 'bg-card text-primary shadow-sm shadow-primary/10 border border-border'
+    : 'text-icon/85 hover:text-primary'
+    }`;
+  const inner = (
+    <>
+      {icon}
+      <span className={active ? 'block' : 'hidden xl:block'}>{label}</span>
+    </>
+  );
+  if (to) {
+    return (
+      <Link to={to} onClick={onClick} className={className}>
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} className={className}>
+      {inner}
+    </button>
+  );
+};
 
 const NavAction = ({ icon, badge, label, hideLabel, onClick }) => (
   <motion.button

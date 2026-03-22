@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
@@ -9,6 +9,7 @@ import { usePosts } from '../context/PostContext';
 import { normalizeVisibility } from '../utils/posts';
 import { supabase } from '../lib/supabaseClient';
 import { getAvatarUrl } from '../utils/avatar';
+import { mapCommentRows } from '../utils/comments';
 import ProfileFriendAdded from '../components/ProfileFriendAdded';
 import ProfileNotFriend from '../components/ProfileNotFriend';
 import ProfilePending from '../components/ProfilePending';
@@ -58,7 +59,14 @@ const Profile = () => {
             *,
             profiles:user_id (id, full_name, avatar_url),
             likes (user_id),
-            comments (id)
+            comments (
+              id,
+              text,
+              parent_id,
+              user_id,
+              created_at,
+              profiles:user_id (full_name, avatar_url)
+            )
           `)
                     .eq('user_id', id)
                     .order('created_at', { ascending: false });
@@ -67,8 +75,10 @@ const Profile = () => {
 
                 const mappedPosts = postsData.map(p => {
                     const isLiked = currentUser ? p.likes.some(like => like.user_id === currentUser.id) : false;
+                    const commentList = mapCommentRows(p.comments || []);
                     return {
                         id: p.id,
+                        userId: p.user_id,
                         author: {
                             id: p.profiles?.id,
                             name: p.profiles?.full_name || 'Unknown',
@@ -79,8 +89,8 @@ const Profile = () => {
                         image: p.image_url,
                         likes: p.likes.length,
                         isLiked: isLiked,
-                        comments: [],
-                        commentCount: p.comments.length,
+                        comments: commentList,
+                        commentCount: commentList.length,
                         shares: 0,
                         timestamp: new Date(p.created_at).toLocaleDateString(),
                         visibility: normalizeVisibility(p.visibility),
@@ -121,6 +131,28 @@ const Profile = () => {
 
         fetchProfileAndPosts();
     }, [id, refreshTrigger, currentUser]);
+
+    /** Syncs comment thread into local profile `posts` (feed context alone does not update this list). */
+    const fetchCommentsForProfile = useCallback(async (postId) => {
+        await fetchComments(postId);
+        try {
+            const { data, error } = await supabase
+                .from('comments')
+                .select(`
+          *,
+          profiles:user_id (full_name, avatar_url)
+        `)
+                .eq('post_id', postId)
+                .order('created_at', { ascending: true });
+            if (error) throw error;
+            const mapped = mapCommentRows(data || []);
+            setPosts(prev => prev.map(p =>
+                p.id === postId ? { ...p, comments: mapped, commentCount: mapped.length } : p
+            ));
+        } catch (e) {
+            console.error('Profile comment sync failed:', e);
+        }
+    }, [fetchComments]);
 
     const handleAddFriend = async () => {
         try {
@@ -482,7 +514,7 @@ const Profile = () => {
                                         post={post}
                                         addComment={addComment}
                                         toggleLike={toggleLike}
-                                        fetchComments={fetchComments}
+                                        fetchComments={fetchCommentsForProfile}
                                     />
                                 ))}
                             </div>
@@ -513,6 +545,9 @@ const Profile = () => {
                             profile={profile}
                             posts={posts}
                             onRemoveFriend={handleRemoveFriend}
+                            toggleLike={toggleLike}
+                            addComment={addComment}
+                            fetchComments={fetchCommentsForProfile}
                         />
                     ) : friendship.status === 'pending' ? (
                         <ProfilePending

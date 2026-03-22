@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from './AuthContext';
 import { getAvatarUrl } from '../utils/avatar';
 import { normalizeVisibility } from '../utils/posts';
+import { mapCommentRows } from '../utils/comments';
 const PostContext = createContext();
 
 export const usePosts = () => useContext(PostContext);
@@ -178,38 +179,54 @@ export const PostProvider = ({ children }) => {
   };
 
 
+  const bumpRefresh = () => setRefreshTrigger(prev => prev + 1);
+
   const toggleLike = async (postId) => {
     try {
       if (!user) return;
 
       const currentPost = posts.find(p => p.id === postId);
-      if (!currentPost) return;
 
-      const optimisticLiked = !currentPost.isLiked;
+      if (currentPost) {
+        const optimisticLiked = !currentPost.isLiked;
+        setPosts(current => current.map(p => {
+          if (p.id === postId) {
+            return {
+              ...p,
+              isLiked: optimisticLiked,
+              likes: optimisticLiked ? p.likes + 1 : Math.max(0, p.likes - 1)
+            };
+          }
+          return p;
+        }));
 
-      // Optimistic UI update
-      setPosts(current => current.map(p => {
-        if (p.id === postId) {
-          return {
-            ...p,
-            isLiked: optimisticLiked,
-            likes: optimisticLiked ? p.likes + 1 : p.likes - 1
-          };
+        if (optimisticLiked) {
+          await supabase.from('likes').insert({ user_id: user.id, post_id: postId });
+        } else {
+          await supabase.from('likes').delete().match({ user_id: user.id, post_id: postId });
         }
-        return p;
-      }));
+        bumpRefresh();
+        return;
+      }
 
-      if (optimisticLiked) {
+      // Post not in feed context (e.g. profile page): check DB then toggle
+      const { data: existing } = await supabase
+        .from('likes')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .eq('post_id', postId)
+        .maybeSingle();
+
+      const willLike = !existing;
+      if (willLike) {
         await supabase.from('likes').insert({ user_id: user.id, post_id: postId });
       } else {
         await supabase.from('likes').delete().match({ user_id: user.id, post_id: postId });
       }
-
-      // Background refresh to ensure consistency
-      // fetchFeed(); 
+      await fetchFeed();
     } catch (err) {
       console.error('Like failed:', err);
-      fetchFeed(); // Revert
+      await fetchFeed();
     }
   };
 
@@ -227,9 +244,8 @@ export const PostProvider = ({ children }) => {
 
       if (error) throw error;
 
-      // Refresh comments for this post
-      fetchComments(postId);
-      // Also updates feed comment count if we refreshed whole feed, but let's just do comments for now
+      await fetchComments(postId);
+      bumpRefresh();
     } catch (err) {
       console.error('Add comment failed:', err);
     }
@@ -248,16 +264,7 @@ export const PostProvider = ({ children }) => {
 
       if (error) throw error;
 
-      const mappedComments = data.map(c => ({
-        id: c.id,
-        user: c.profiles?.full_name || 'Unknown',
-        userId: c.user_id,
-        avatar: getAvatarUrl(c.profiles?.full_name, c.profiles?.avatar_url),
-        text: c.text,
-        parentId: c.parent_id,
-        time: new Date(c.created_at).toLocaleDateString(),
-        createdAt: c.created_at
-      }));
+      const mappedComments = mapCommentRows(data);
 
       setPosts(current => current.map(p => {
         if (p.id === postId) {
@@ -269,7 +276,6 @@ export const PostProvider = ({ children }) => {
         }
         return p;
       }));
-
     } catch (err) {
       console.error('Fetch comments failed:', err);
     }
@@ -280,6 +286,7 @@ export const PostProvider = ({ children }) => {
       const { error } = await supabase.from('posts').delete().eq('id', postId);
       if (error) throw error;
       setPosts(prev => prev.filter(p => p.id !== postId));
+      await fetchFeed();
     } catch (err) {
       console.error('Delete post failed:', err);
     }

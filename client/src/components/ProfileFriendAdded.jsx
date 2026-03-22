@@ -1,9 +1,16 @@
 import React from 'react';
 import ProfileHeader from './ProfileHeader';
 import StatsSection from './StatsSection';
-import ProfilePostCard from './ProfilePostCard';
+import PostCard from './PostCard';
 
-const ProfileFriendAdded = ({ profile, posts = [], onRemoveFriend }) => {
+const ProfileFriendAdded = ({
+    profile,
+    posts = [],
+    onRemoveFriend,
+    toggleLike,
+    addComment,
+    fetchComments
+}) => {
     if (!profile) {
         return (
             <div className="min-h-screen bg-background py-12 px-4 flex items-center justify-center">
@@ -39,9 +46,16 @@ const ProfileFriendAdded = ({ profile, posts = [], onRemoveFriend }) => {
                         <h2 className="text-2xl font-bold text-foreground mb-6">Posts</h2>
 
                         {posts.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="space-y-6 max-w-2xl">
                                 {posts.map((post) => (
-                                    <ProfilePostCard key={post.id} post={post} />
+                                    <PostCard
+                                        key={post.id}
+                                        post={post}
+                                        setShowReport={() => { }}
+                                        addComment={addComment}
+                                        toggleLike={toggleLike}
+                                        fetchComments={fetchComments}
+                                    />
                                 ))}
                             </div>
                         ) : (
