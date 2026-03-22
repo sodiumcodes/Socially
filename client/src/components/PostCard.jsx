@@ -7,9 +7,17 @@ import { usePosts } from '../context/PostContext';
 import ImageLightbox from './ImageLightbox';
 import { getAvatarUrl } from '../utils/avatar';
 
-const PostCard = ({ post, setShowReport, addComment, toggleLike, fetchComments }) => {
+const PostCard = ({ post, setShowReport, addComment, toggleLike, toggleSave, fetchComments }) => {
   const { user } = useAuth();
-  const { deletePost, editComment, deleteComment } = usePosts();
+  const { deletePost, editComment, deleteComment, toggleSave: contextToggleSave } = usePosts();
+
+  const handleToggleSave = () => {
+    if (toggleSave) {
+      toggleSave(post.id);
+    } else {
+      contextToggleSave(post.id);
+    }
+  };
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [replyTo, setReplyTo] = useState(null); // commentId to reply to
@@ -361,8 +369,11 @@ const PostCard = ({ post, setShowReport, addComment, toggleLike, fetchComments }
               ) : null;
             })()}
           </div>
-          <button className="p-3 text-icon/80 hover:text-primary hover:bg-primary/10 rounded-2xl transition-all">
-            <Bookmark size={20} />
+          <button 
+             onClick={handleToggleSave}
+             className={`p-3 rounded-2xl transition-all ${post.isSaved ? 'text-primary bg-primary/10' : 'text-icon/80 hover:text-primary hover:bg-primary/10'}`}
+           >
+            <Bookmark size={20} fill={post.isSaved ? "currentColor" : "none"} />
           </button>
         </div>
       </div>

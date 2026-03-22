@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
-import FeedComponent from '../components/Feed';
 import Rightbar from '../components/Rightbar';
 import { usePosts } from '../context/PostContext';
 import { useAuth } from '../context/AuthContext';
@@ -10,36 +9,36 @@ import { supabase } from '../lib/supabaseClient';
 import { normalizeVisibility } from '../utils/posts';
 import { getAvatarUrl } from '../utils/avatar';
 import { mapCommentRows } from '../utils/comments';
+import { Star } from 'lucide-react';
 
-const Community = () => {
+const Favorites = () => {
   const { user } = useAuth();
   const { toggleLike, addComment, fetchComments } = usePosts();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchCommunityPosts = async () => {
+    const fetchFavoritePosts = async () => {
       if (!user) return;
       setLoading(true);
       try {
-        // 1. Get accepted connections
-        const { data: connections, error: connError } = await supabase
-          .from('connections')
-          .select('friend_id, user_id')
-          .eq('status', 'accepted')
-          .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
+        // 1. Get post IDs that the user has liked
+        const { data: likedPosts, error: likesError } = await supabase
+          .from('likes')
+          .select('post_id')
+          .eq('user_id', user.id);
 
-        if (connError) throw connError;
+        if (likesError) throw likesError;
 
-        const friendIds = connections.map(c => 
-          c.user_id === user.id ? c.friend_id : c.user_id
-        );
+        if (!likedPosts || likedPosts.length === 0) {
+          setPosts([]);
+          return;
+        }
 
-        // Always include self
-        friendIds.push(user.id);
+        const postIds = likedPosts.map(l => l.post_id);
 
-        // 2. Fetch posts from friends
-        const { data: postsData, error: postsError } = await supabase
+        // 2. Fetch those posts
+        let query = supabase
           .from('posts')
           .select(`
             *,
@@ -52,15 +51,44 @@ const Community = () => {
               user_id,
               created_at,
               profiles:user_id (full_name, avatar_url)
-            )
+            ),
+            saved_posts:saved_posts (user_id)
           `)
-          .in('user_id', friendIds)
+          .in('id', postIds)
           .order('created_at', { ascending: false });
+
+        let { data: postsData, error: postsError } = await query;
+
+        // Fallback if saved_posts join fails
+        if (postsError && postsError.message.includes('saved_posts')) {
+          console.warn('saved_posts table might be missing in Favorites.');
+          const fallbackQuery = supabase
+            .from('posts')
+            .select(`
+              *,
+              profiles:user_id (id, full_name, avatar_url),
+              likes (user_id),
+              comments (
+                id,
+                text,
+                parent_id,
+                user_id,
+                created_at,
+                profiles:user_id (full_name, avatar_url)
+              )
+            `)
+            .in('id', postIds)
+            .order('created_at', { ascending: false });
+          const fallbackResult = await fallbackQuery;
+          postsData = fallbackResult.data;
+          postsError = fallbackResult.error;
+        }
 
         if (postsError) throw postsError;
 
         const mappedPosts = postsData.map(p => {
-          const isLiked = user ? p.likes.some(like => like.user_id === user.id) : false;
+          const isLiked = user ? p.likes?.some(like => like.user_id === user.id) : false;
+          const isSaved = user && p.saved_posts ? p.saved_posts.some(save => save.user_id === user.id) : false;
           const commentList = mapCommentRows(p.comments || []);
           return {
             id: p.id,
@@ -73,8 +101,9 @@ const Community = () => {
             content: p.content,
             images: p.image_urls || [],
             image: p.image_url,
-            likes: p.likes.length,
+            likes: p.likes?.length || 0,
             isLiked: isLiked,
+            isSaved: isSaved,
             comments: commentList,
             commentCount: commentList.length,
             shares: 0,
@@ -86,16 +115,23 @@ const Community = () => {
 
         setPosts(mappedPosts);
       } catch (err) {
-        console.error('Community fetch error:', err);
+        console.error('Favorites fetch error:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCommunityPosts();
+    fetchFavoritePosts();
   }, [user]);
 
-  const fetchCommentsForCommunity = async (postId) => {
+  const handleToggleLike = async (postId) => {
+    // Optimistically update the UI by removing the post from the list
+    setPosts(prev => prev.filter(p => p.id !== postId));
+    // Actually toggle the like in the context/DB
+    await toggleLike(postId);
+  };
+
+  const fetchCommentsForFavorites = async (postId) => {
     try {
       const { data, error } = await supabase
         .from('comments')
@@ -111,7 +147,7 @@ const Community = () => {
         p.id === postId ? { ...p, comments: mapped, commentCount: mapped.length } : p
       ));
     } catch (e) {
-      console.error('Community comment sync failed:', e);
+      console.error('Favorites comment sync failed:', e);
     }
   };
 
@@ -122,9 +158,14 @@ const Community = () => {
         <Sidebar />
         
         <main className="flex-1 max-w-[640px] mx-auto px-4 w-full min-w-0">
-          <div className="mb-6">
-            <h1 className="text-2xl font-black text-foreground">Community Feed</h1>
-            <p className="text-sm text-muted-foreground font-medium">Posts from people you follow</p>
+          <div className="mb-6 flex items-center gap-3">
+            <div className="p-2 bg-amber-400/10 rounded-xl">
+              <Star className="text-amber-500 w-6 h-6" fill="currentColor" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black text-foreground tracking-tight">Favorites</h1>
+              <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest">Posts you've liked</p>
+            </div>
           </div>
 
           {loading ? (
@@ -138,15 +179,18 @@ const Community = () => {
                   key={post.id}
                   post={post}
                   addComment={addComment}
-                  toggleLike={toggleLike}
-                  fetchComments={fetchCommentsForCommunity}
+                  toggleLike={handleToggleLike}
+                  fetchComments={fetchCommentsForFavorites}
                 />
               ))}
             </div>
           ) : (
-            <div className="bg-card p-12 rounded-[2rem] border border-border text-center mx-4">
-              <h3 className="text-lg font-bold text-foreground mb-1">Your community is quiet</h3>
-              <p className="text-muted-foreground text-sm">Follow more people to see their updates here!</p>
+            <div className="bg-card p-16 rounded-[3rem] border border-border text-center shadow-sm mx-4">
+              <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+                <Star className="w-8 h-8 text-border" />
+              </div>
+              <h2 className="text-xl font-black text-foreground mb-2">No favorites yet</h2>
+              <p className="text-muted-foreground text-sm font-medium">When you like a post, it will appear here.</p>
             </div>
           )}
         </main>
@@ -157,4 +201,4 @@ const Community = () => {
   );
 };
 
-export default Community;
+export default Favorites;

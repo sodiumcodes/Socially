@@ -27,6 +27,7 @@ const Profile = () => {
     const [friendship, setFriendship] = useState({ status: null, senderId: null }); // { status, senderId }
     const [followingList, setFollowingList] = useState([]);
     const [loadingFollowing, setLoadingFollowing] = useState(false);
+    const [stats, setStats] = useState({ posts: 0, followers: 0, following: 0 });
 
     // Edit Mode State
     const [isEditing, setIsEditing] = useState(false);
@@ -133,16 +134,47 @@ const Profile = () => {
                     });
                 }
 
-                // 4. Fetch Following (Suggested People as per user request)
-                setLoadingFollowing(true);
-                const { data: follows, error: followError } = await supabase
+                // 4. Fetch Stats (Followers/Following)
+                const { data: followings } = await supabase
                     .from('connections')
-                    .select('friend_id, profiles:friend_id (id, full_name, avatar_url)')
+                    .select('id')
                     .eq('user_id', id)
                     .eq('status', 'accepted');
 
-                if (!followError && follows) {
-                    setFollowingList(follows.map(f => f.profiles));
+                const { data: followers } = await supabase
+                    .from('connections')
+                    .select('id')
+                    .eq('friend_id', id)
+                    .eq('status', 'accepted');
+
+                setStats({
+                    posts: mappedPosts.length,
+                    followers: followers?.length || 0,
+                    following: followings?.length || 0
+                });
+
+                // 5. Fetch Suggested People (Friends/Followings of the profile user)
+                setLoadingFollowing(true);
+                const { data: friends, error: friendsError } = await supabase
+                    .from('connections')
+                    .select('user_id, friend_id')
+                    .eq('status', 'accepted')
+                    .or(`user_id.eq.${id},friend_id.eq.${id}`);
+
+                if (!friendsError && friends) {
+                    const friendIds = friends.map(f => f.user_id === id ? f.friend_id : f.user_id);
+                    
+                    if (friendIds.length > 0) {
+                        const { data: friendProfiles } = await supabase
+                            .from('profiles')
+                            .select('id, full_name, avatar_url')
+                            .in('id', friendIds)
+                            .neq('id', currentUser?.id || ''); // Don't suggest self
+                        
+                        setFollowingList(friendProfiles || []);
+                    } else {
+                        setFollowingList([]);
+                    }
                 }
                 setLoadingFollowing(false);
 
@@ -214,6 +246,8 @@ const Profile = () => {
                 });
 
             setFriendship({ status: 'pending', senderId: currentUser.id });
+            // Refresh stats since counts might have changed if we are using "pending" in counts (though usually only "accepted")
+            // But let's refresh to be safe and consistent.
         } catch (err) {
             console.error("Failed to add friend:", err);
             alert("Failed to add friend");
@@ -240,6 +274,25 @@ const Profile = () => {
                 .eq('type', 'friend_request');
 
             setFriendship(prev => ({ ...prev, status: 'accepted' }));
+            
+            // Re-fetch stats to update counts immediately
+            const { data: followings } = await supabase
+                .from('connections')
+                .select('id')
+                .eq('user_id', id)
+                .eq('status', 'accepted');
+
+            const { data: followers } = await supabase
+                .from('connections')
+                .select('id')
+                .eq('friend_id', id)
+                .eq('status', 'accepted');
+
+            setStats(prev => ({
+                ...prev,
+                followers: followers?.length || 0,
+                following: followings?.length || 0
+            }));
         } catch (err) {
             console.error("Failed to accept friend:", err);
             alert("Failed to accept friend");
@@ -249,22 +302,10 @@ const Profile = () => {
     const handleRemoveFriend = async () => {
         try {
             // 1. Delete Connection (Try both directions)
-            const { error: error1 } = await supabase
+            await supabase
                 .from('connections')
                 .delete()
-                .eq('user_id', currentUser.id)
-                .eq('friend_id', id);
-
-            const { error: error2 } = await supabase
-                .from('connections')
-                .delete()
-                .eq('user_id', id)
-                .eq('friend_id', currentUser.id);
-
-            if (error1 && error2) {
-                // Technically only one should exist, if both error then something is wrong
-                // But usually, one succeeds and one "fails" (deletes 0 rows) which is fine.
-            }
+                .or(`and(user_id.eq.${currentUser.id},friend_id.eq.${id}),and(user_id.eq.${id},friend_id.eq.${currentUser.id})`);
 
             // 2. Delete Notifications
             await supabase
@@ -274,6 +315,25 @@ const Profile = () => {
                 .or(`and(user_id.eq.${currentUser.id},sender_id.eq.${id}),and(user_id.eq.${id},sender_id.eq.${currentUser.id})`);
 
             setFriendship({ status: null, senderId: null });
+
+            // Re-fetch stats to update counts immediately
+            const { data: followings } = await supabase
+                .from('connections')
+                .select('id')
+                .eq('user_id', id)
+                .eq('status', 'accepted');
+
+            const { data: followers } = await supabase
+                .from('connections')
+                .select('id')
+                .eq('friend_id', id)
+                .eq('status', 'accepted');
+
+            setStats(prev => ({
+                ...prev,
+                followers: followers?.length || 0,
+                following: followings?.length || 0
+            }));
         } catch (err) {
             console.error("Failed to remove friend:", err);
             alert("Failed to remove friend");
@@ -390,12 +450,7 @@ const Profile = () => {
 
     const isOwnProfile = currentUser && profile && currentUser.id === profile.id;
 
-    // Default Friendship Logic: Same Batch and Same Branch
-    const isPeer = currentUser && profile &&
-        currentUser.user_metadata?.batch === profile.batch &&
-        currentUser.user_metadata?.branch === profile.branch;
-
-    const isFriend = friendship.status === 'accepted' || isPeer;
+    const isFriend = friendship.status === 'accepted';
 
     if (loading) return (
         <div className="min-h-screen bg-background flex items-center justify-center">
@@ -539,15 +594,15 @@ const Profile = () => {
                                 {/* Stats */}
                                 <div className="flex items-center gap-8 mt-8 border-t border-border pt-6">
                                     <div className="text-center">
-                                        <div className="text-xl font-black text-foreground">{posts.length}</div>
+                                        <div className="text-xl font-black text-foreground">{stats.posts}</div>
                                         <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Posts</div>
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-xl font-black text-foreground">0</div>
+                                        <div className="text-xl font-black text-foreground">{stats.followers}</div>
                                         <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Followers</div>
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-xl font-black text-foreground">0</div>
+                                        <div className="text-xl font-black text-foreground">{stats.following}</div>
                                         <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Following</div>
                                     </div>
                                 </div>

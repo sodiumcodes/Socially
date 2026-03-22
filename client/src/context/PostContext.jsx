@@ -30,15 +30,35 @@ export const PostProvider = ({ children }) => {
       }
 
       // 2. Fetch posts
-      const { data, error } = await supabase
+      let postsQuery = supabase
         .from('posts')
         .select(`
           *,
           profiles:user_id (id, full_name, avatar_url),
           likes (user_id),
-          comments (id)
+          comments (id),
+          saved_posts:saved_posts (user_id)
         `)
         .order('created_at', { ascending: false });
+
+      let { data, error } = await postsQuery;
+
+      // If saved_posts join fails (table might not exist yet), try without it
+      if (error && error.message.includes('saved_posts')) {
+        console.warn('saved_posts table might be missing. Fetching without it.');
+        const fallbackQuery = supabase
+          .from('posts')
+          .select(`
+            *,
+            profiles:user_id (id, full_name, avatar_url),
+            likes (user_id),
+            comments (id)
+          `)
+          .order('created_at', { ascending: false });
+        const fallbackResult = await fallbackQuery;
+        data = fallbackResult.data;
+        error = fallbackResult.error;
+      }
 
       if (error) throw error;
 
@@ -46,7 +66,8 @@ export const PostProvider = ({ children }) => {
       const processedPosts = data
         .map(p => {
           const vis = normalizeVisibility(p.visibility);
-          const isLiked = user ? p.likes.some(like => like.user_id === user.id) : false;
+          const isLiked = user ? p.likes?.some(like => like.user_id === user.id) : false;
+          const isSaved = user && p.saved_posts ? p.saved_posts.some(save => save.user_id === user.id) : false;
 
           return {
             id: p.id,
@@ -59,10 +80,11 @@ export const PostProvider = ({ children }) => {
             content: p.content,
             images: p.image_urls || [], // Array of image URLs
             image: p.image_url, // Backward compatibility for old posts
-            likes: p.likes.length,
+            likes: p.likes?.length || 0,
             isLiked: isLiked,
+            isSaved: isSaved,
             comments: [],
-            commentCount: p.comments.length,
+            commentCount: p.comments?.length || 0,
             shares: 0,
             timestamp: new Date(p.created_at).toLocaleDateString(),
             visibility: vis,
@@ -230,6 +252,73 @@ export const PostProvider = ({ children }) => {
     }
   };
 
+  const toggleSave = async (postId) => {
+    try {
+      if (!user) return;
+
+      const currentPost = posts.find(p => p.id === postId);
+
+      if (currentPost) {
+        const optimisticSaved = !currentPost.isSaved;
+        setPosts(current => current.map(p => {
+          if (p.id === postId) {
+            return {
+              ...p,
+              isSaved: optimisticSaved
+            };
+          }
+          return p;
+        }));
+
+        const { error } = optimisticSaved 
+          ? await supabase.from('saved_posts').insert({ user_id: user.id, post_id: postId })
+          : await supabase.from('saved_posts').delete().match({ user_id: user.id, post_id: postId });
+
+        if (error) {
+          if (error.message.includes('relation "saved_posts" does not exist')) {
+            alert("The 'saved_posts' feature is not available yet. Please run the database migration.");
+            // Revert optimistic update
+            setPosts(current => current.map(p => {
+              if (p.id === postId) return { ...p, isSaved: !optimisticSaved };
+              return p;
+            }));
+            return;
+          }
+          throw error;
+        }
+        bumpRefresh();
+        return;
+      }
+
+      // If not in feed, check DB then toggle
+      const { data: existing, error: fetchError } = await supabase
+        .from('saved_posts')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .eq('post_id', postId)
+        .maybeSingle();
+
+      if (fetchError) {
+        if (fetchError.message.includes('relation "saved_posts" does not exist')) {
+          alert("The 'saved_posts' feature is not available yet. Please run the database migration.");
+          return;
+        }
+        throw fetchError;
+      }
+
+      const willSave = !existing;
+      if (willSave) {
+        await supabase.from('saved_posts').insert({ user_id: user.id, post_id: postId });
+      } else {
+        await supabase.from('saved_posts').delete().match({ user_id: user.id, post_id: postId });
+      }
+      await fetchFeed();
+    } catch (err) {
+      console.error('Save failed:', err);
+      await fetchFeed();
+    }
+  };
+
   const addComment = async (postId, text, parentId = null) => {
     try {
       // Insert comment
@@ -354,18 +443,21 @@ export const PostProvider = ({ children }) => {
   return (
     <PostContext.Provider value={{
       posts,
+      refreshTrigger,
+      fetchFeed,
       createPost,
       toggleLike,
+      toggleSave,
       addComment,
-      editComment, // not impl yet
-      deleteComment, // not impl yet
-      reportPost, // not impl yet
       fetchComments,
       deletePost,
+      editComment,
+      deleteComment,
+      reportPost,
       isCreatePostOpen,
+      setIsCreatePostOpen,
       openCreatePost,
-      closeCreatePost,
-      refreshTrigger
+      closeCreatePost
     }}>
       {children}
     </PostContext.Provider>
