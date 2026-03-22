@@ -82,14 +82,14 @@ const ProfileDemo = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin"></div>
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="min-h-screen bg-background">
             {/* Version Switcher */}
             <div className="sticky top-0 z-50 bg-white shadow-md border-b border-gray-200">
                 <div className="max-w-5xl mx-auto px-4 py-4">
@@ -97,8 +97,8 @@ const ProfileDemo = () => {
                         <button
                             onClick={() => setActiveVersion('friend-added')}
                             className={`px-6 py-2.5 rounded-full font-semibold transition-all duration-200 ${activeVersion === 'friend-added'
-                                ? 'bg-gradient-to-r from-pink-500 to-red-500 text-white shadow-lg'
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                ? 'bg-gradient-to-r from-cayenne-red-500 to-tiger-orange-600 text-white shadow-lg'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
                                 }`}
                         >
                             Version 1: Friend Added
@@ -106,8 +106,8 @@ const ProfileDemo = () => {
                         <button
                             onClick={() => setActiveVersion('not-friend')}
                             className={`px-6 py-2.5 rounded-full font-semibold transition-all duration-200 ${activeVersion === 'not-friend'
-                                ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg'
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                ? 'bg-gradient-to-r from-indigo-velvet-600 to-medium-slate-blue-500 text-white shadow-lg'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
                                 }`}
                         >
                             Version 2: Not Friend

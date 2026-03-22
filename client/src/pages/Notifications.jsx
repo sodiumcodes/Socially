@@ -113,23 +113,23 @@ const Notifications = () => {
     };
 
     return (
-        <div className="bg-[#F1F5F9] min-h-screen text-slate-900">
+        <div className="bg-background min-h-screen text-foreground">
             <Navbar />
             <div className="max-w-[1600px] mx-auto flex justify-center pt-4 px-0 lg:px-4 pb-4 gap-4">
                 <Sidebar />
                 <main className="flex-1 max-w-2xl w-full min-w-0">
                     <div className="flex items-center justify-between mb-6 px-4 lg:px-0">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-white rounded-xl shadow-sm border border-slate-100">
-                                <Bell className="w-5 h-5 text-indigo-600" />
+                            <div className="p-2 bg-card rounded-xl shadow-sm border border-border">
+                                <Bell className="w-5 h-5 text-icon" />
                             </div>
-                            <h1 className="text-2xl font-black tracking-tight text-slate-800">Notifications</h1>
+                            <h1 className="text-2xl font-black tracking-tight text-foreground">Notifications</h1>
                         </div>
                     </div>
 
                     {loading ? (
                         <div className="flex justify-center py-12">
-                            <div className="w-8 h-8 border-4 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin"></div>
+                            <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
                         </div>
                     ) : notifications.length > 0 ? (
                         <div className="space-y-4">
@@ -143,12 +143,12 @@ const Notifications = () => {
                             ))}
                         </div>
                     ) : (
-                        <div className="bg-white rounded-[2rem] p-12 text-center border border-slate-100 shadow-sm">
-                            <div className="inline-flex p-4 rounded-full bg-slate-50 mb-4 text-slate-300">
+                        <div className="bg-card rounded-[2rem] p-12 text-center border border-border shadow-sm">
+                            <div className="inline-flex p-4 rounded-full bg-muted mb-4 text-muted-foreground">
                                 <BellOff className="w-8 h-8" />
                             </div>
-                            <h3 className="text-lg font-bold text-slate-900 mb-1">Clear for now!</h3>
-                            <p className="text-slate-400 text-sm">You've caught up with everything.</p>
+                            <h3 className="text-lg font-bold text-foreground mb-1">Clear for now!</h3>
+                            <p className="text-muted-foreground text-sm">You've caught up with everything.</p>
                         </div>
                     )}
                 </main>

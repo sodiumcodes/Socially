@@ -13,9 +13,9 @@ const ProfilePostCard = ({ post }) => {
         : post.image || 'https://via.placeholder.com/400x300/e0c3fc/000000?text=No+Image';
 
     return (
-        <div className="bg-gray-50 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200">
+        <div className="bg-muted rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200 border border-border">
             {/* Post Image */}
-            <div className="aspect-[4/3] bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+            <div className="aspect-[4/3] bg-gradient-to-br from-medium-slate-blue-500/20 to-tiger-orange-500/10 flex items-center justify-center">
                 <img
                     src={imageUrl}
                     alt={post.content || 'Post image'}
@@ -26,12 +26,12 @@ const ProfilePostCard = ({ post }) => {
             {/* Post Content */}
             <div className="p-4">
                 {/* Caption */}
-                <p className="text-gray-700 text-sm mb-3 line-clamp-2">
+                <p className="text-foreground/90 text-sm mb-3 line-clamp-2">
                     {post.content || post.caption || 'No caption'}
                 </p>
 
                 {/* Action Row */}
-                <div className="flex items-center justify-between text-sm text-gray-500">
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
                     {/* Likes */}
                     <div className="flex items-center gap-1.5 hover:text-red-500 cursor-pointer transition-colors">
                         <Heart className="w-4 h-4" />
@@ -46,7 +46,7 @@ const ProfilePostCard = ({ post }) => {
 
                     {/* Share or Customized Label */}
                     {isCustom ? (
-                        <span className="text-xs px-2 py-1 bg-purple-100 text-purple-600 rounded-full font-medium">
+                        <span className="text-xs px-2 py-1 bg-primary/15 text-primary rounded-full font-medium">
                             Customized
                         </span>
                     ) : (

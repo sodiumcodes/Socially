@@ -29,7 +29,7 @@ const SearchResults = () => {
     }, [location.search]); // Depend on the whole search string
 
     return (
-        <div className="bg-[#F1F5F9] min-h-screen text-slate-900">
+        <div className="bg-background min-h-screen text-foreground">
             <Navbar />
             <div className="max-w-[1600px] mx-auto flex justify-center pt-4 px-0 lg:px-4 pb-4 gap-4">
                 <Sidebar />
@@ -37,28 +37,28 @@ const SearchResults = () => {
                 <main className="flex-1 max-w-[800px] mx-auto px-4 py-6">
                     <div className="mb-8 flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-100">
-                                <SearchIcon className="text-white w-6 h-6" />
+                            <div className="p-3 bg-primary/15 border border-primary/25 rounded-2xl shadow-lg shadow-primary/10">
+                                <SearchIcon className="text-icon w-6 h-6" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-black text-slate-900 tracking-tight">Search Results</h1>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Showing users matching "{query}"</p>
+                                <h1 className="text-2xl font-black text-foreground tracking-tight">Search Results</h1>
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Showing users matching "{query}"</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm">
-                            <Users size={16} className="text-slate-400" />
-                            <span className="text-xs font-black text-slate-900">{results.length} Found</span>
+                        <div className="flex items-center gap-2 bg-card px-4 py-2 rounded-xl border border-border shadow-sm">
+                            <Users size={16} className="text-muted-foreground" />
+                            <span className="text-xs font-black text-foreground">{results.length} Found</span>
                         </div>
                     </div>
 
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
-                            <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
-                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Searching campus records...</p>
+                            <Loader2 className="w-10 h-10 text-icon animate-spin" />
+                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Searching campus records...</p>
                         </div>
                     ) : error ? (
-                        <div className="bg-rose-50 border border-rose-100 p-6 rounded-3xl text-center">
-                            <p className="text-rose-600 font-bold">Search error: {error}</p>
+                        <div className="bg-cayenne-red-500/10 border border-cayenne-red-500/20 p-6 rounded-3xl text-center">
+                            <p className="text-cayenne-red-500 font-bold">Search error: {error}</p>
                         </div>
                     ) : results.length > 0 ? (
                         <div className="space-y-4">
@@ -67,12 +67,12 @@ const SearchResults = () => {
                             ))}
                         </div>
                     ) : (
-                        <div className="bg-white p-16 rounded-[3rem] border border-slate-100 text-center shadow-sm">
-                            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <SearchIcon size={32} className="text-slate-200" />
+                        <div className="bg-card p-16 rounded-[3rem] border border-border text-center shadow-sm">
+                            <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+                                <SearchIcon size={32} className="text-border" />
                             </div>
-                            <h2 className="text-xl font-black text-slate-900 mb-2">No users found</h2>
-                            <p className="text-slate-400 text-sm font-medium">Try a different name, campus, or batch.</p>
+                            <h2 className="text-xl font-black text-foreground mb-2">No users found</h2>
+                            <p className="text-muted-foreground text-sm font-medium">Try a different name, campus, or batch.</p>
                         </div>
                     )}
                 </main>

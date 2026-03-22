@@ -7,8 +7,8 @@ import { Clock } from 'lucide-react';
 const ProfilePending = ({ profile, posts = [], onRemoveFriend, isReceived = false, onAcceptFriend }) => {
     if (!profile) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-purple-50 to-pink-50 py-12 px-4 flex items-center justify-center">
-                <div className="text-gray-500">Loading profile...</div>
+            <div className="min-h-screen bg-background py-12 px-4 flex items-center justify-center">
+                <div className="text-muted-foreground">Loading profile...</div>
             </div>
         );
     }
@@ -27,9 +27,9 @@ const ProfilePending = ({ profile, posts = [], onRemoveFriend, isReceived = fals
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-purple-50 to-pink-50 py-12 px-4">
+        <div className="min-h-screen bg-background py-12 px-4">
             <div className="max-w-5xl mx-auto">
-                <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
+                <div className="bg-card rounded-3xl shadow-xl border border-border overflow-hidden">
                     {/* Header with status */}
                     <div className="relative">
                         <ProfileHeader
@@ -44,7 +44,7 @@ const ProfilePending = ({ profile, posts = [], onRemoveFriend, isReceived = fals
                     </div>
 
                     {/* Status Banner */}
-                    <div className="bg-amber-50 border-b border-amber-100 px-8 py-3 flex items-center gap-3">
+                    <div className="bg-amber-500/10 border-b border-amber-500/20 px-8 py-3 flex items-center gap-3">
                         <Clock className="w-4 h-4 text-amber-500" />
                         <span className="text-sm font-bold text-amber-700 uppercase tracking-wider">
                             {isReceived ? 'They want to be your friend!' : 'Friend Request Sent'}
@@ -54,7 +54,7 @@ const ProfilePending = ({ profile, posts = [], onRemoveFriend, isReceived = fals
                     <StatsSection stats={stats} />
 
                     <div className="px-8 py-6">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-6">Posts</h2>
+                        <h2 className="text-2xl font-bold text-foreground mb-6">Posts</h2>
                         <div className="relative">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 blur-sm pointer-events-none opacity-50">
                                 {displayPosts.slice(0, 3).map((post) => (
@@ -62,11 +62,11 @@ const ProfilePending = ({ profile, posts = [], onRemoveFriend, isReceived = fals
                                 ))}
                             </div>
                             <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-8 py-6 shadow-xl border border-amber-200 text-center">
-                                    <h3 className="text-xl font-bold text-gray-800 mb-2">
+                                <div className="bg-card/95 backdrop-blur-sm rounded-2xl px-8 py-6 shadow-xl border border-border text-center">
+                                    <h3 className="text-xl font-bold text-foreground mb-2">
                                         {isReceived ? 'Accept to View Posts' : 'Pending Approval'}
                                     </h3>
-                                    <p className="text-gray-600 text-sm">
+                                    <p className="text-muted-foreground text-sm">
                                         {isReceived ? `Accept ${profile.full_name}'s request to see their posts.` : `Waiting for ${profile.full_name} to accept your request.`}
                                     </p>
                                 </div>

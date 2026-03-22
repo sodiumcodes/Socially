@@ -90,24 +90,24 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-[100] bg-white/80 backdrop-blur-xl border-b border-slate-100 px-6 py-2.5">
+    <nav className="sticky top-0 z-[100] bg-card/80 backdrop-blur-xl border-b border-border px-6 py-2.5">
       <div className="max-w-[1500px] mx-auto flex items-center justify-between gap-8">
 
         {/* 1. Brand Logo - Minimal & Bold */}
         <Link to="/feed" className="flex items-center gap-3 shrink-0">
           <div className="relative group cursor-pointer">
-            <div className="absolute -inset-1 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
-            <div className="relative bg-slate-900 p-2 rounded-xl">
+            <div className="absolute -inset-1 bg-gradient-to-tr from-medium-slate-blue-500 to-amber-flame-500 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
+            <div className="relative bg-foreground p-2 rounded-xl">
               <Layout className="text-white w-5 h-5" />
             </div>
           </div>
-          <span className="text-lg font-black text-slate-900 tracking-tighter hidden xl:block">
+          <span className="text-lg font-black text-foreground tracking-tighter hidden xl:block">
             Socially
           </span>
         </Link>
 
         {/* 2. Central Navigation - Fills the "Empty" space */}
-        <div className="hidden lg:flex items-center bg-slate-100/50 p-1 rounded-2xl border border-slate-100">
+        <div className="hidden lg:flex items-center bg-muted/50 p-1 rounded-2xl border border-border">
           <Link to="/feed">
             <TabItem
               icon={<Compass size={18} />}
@@ -135,12 +135,12 @@ const Navbar = () => {
 
           {/* Dynamic Search Bar */}
           <div className="hidden md:flex flex-col relative w-full max-w-[320px]">
-            <div className="flex items-center bg-slate-50 px-4 py-2 rounded-xl border border-transparent focus-within:border-indigo-100 focus-within:bg-white transition-all group">
-              <Search className="w-4 h-4 text-slate-400 mr-2 group-focus-within:text-indigo-500" />
+            <div className="flex items-center bg-muted px-4 py-2 rounded-xl border border-transparent focus-within:border-primary/20 focus-within:bg-card transition-all group">
+              <Search className="w-4 h-4 text-icon mr-2 group-focus-within:text-primary" />
               <input
                 type="text"
                 placeholder="Search campus..."
-                className="bg-transparent border-none outline-none text-xs w-full font-medium text-slate-600 placeholder:text-slate-400"
+                className="bg-transparent border-none outline-none text-xs w-full font-medium text-foreground/90 placeholder:text-muted-foreground"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearch}
@@ -148,7 +148,7 @@ const Navbar = () => {
               />
               <button
                 onClick={() => setShowSearchFilters(!showSearchFilters)}
-                className={`p-1.5 rounded-lg transition-colors ${showSearchFilters ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-slate-100 text-slate-400'}`}
+                className={`p-1.5 rounded-lg transition-colors ${showSearchFilters ? 'bg-primary/10 text-icon' : 'hover:bg-muted text-icon'}`}
               >
                 <Filter size={14} />
               </button>
@@ -166,29 +166,29 @@ const Navbar = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] border border-slate-100 p-4 z-50 overflow-hidden"
+                    className="absolute top-full left-0 right-0 mt-2 bg-card rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.45)] border border-border p-4 z-50 overflow-hidden"
                   >
-                    <div className="flex items-center justify-between mb-4 border-b border-slate-50 pb-2">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Search Filters</span>
+                    <div className="flex items-center justify-between mb-4 border-b border-border pb-2">
+                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Search Filters</span>
                       <button onClick={() => {
                         setSelectedBatches([]);
                         setSelectedCampuses([]);
                         setSelectedBranches([]);
-                      }} className="text-[9px] font-bold text-rose-500 uppercase">Clear</button>
+                      }} className="text-[9px] font-bold text-cayenne-red-500 uppercase">Clear</button>
                     </div>
 
                     <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1 scrollbar-thin">
                       {/* Batches */}
                       <div>
-                        <label className="flex items-center gap-2 text-[10px] font-black text-slate-900 uppercase tracking-tight mb-2">
-                          <GraduationCap size={12} className="text-indigo-500" /> Batches
+                        <label className="flex items-center gap-2 text-[10px] font-black text-foreground uppercase tracking-tight mb-2">
+                          <GraduationCap size={12} className="text-icon" /> Batches
                         </label>
                         <div className="flex flex-wrap gap-1.5">
                           {BATCHES.map(batch => (
                             <button
                               key={batch}
                               onClick={() => toggleFilter(batch, selectedBatches, setSelectedBatches)}
-                              className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all ${selectedBatches.includes(batch) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-500 border-slate-200'}`}
+                              className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all ${selectedBatches.includes(batch) ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border'}`}
                             >
                               {batch}
                             </button>
@@ -198,15 +198,15 @@ const Navbar = () => {
 
                       {/* Campuses */}
                       <div>
-                        <label className="flex items-center gap-2 text-[10px] font-black text-slate-900 uppercase tracking-tight mb-2">
-                          <MapPin size={12} className="text-emerald-500" /> Campuses
+                        <label className="flex items-center gap-2 text-[10px] font-black text-foreground uppercase tracking-tight mb-2">
+                          <MapPin size={12} className="text-icon" /> Campuses
                         </label>
                         <div className="flex flex-wrap gap-1.5">
                           {CAMPUSES.map(campus => (
                             <button
                               key={campus}
                               onClick={() => toggleFilter(campus, selectedCampuses, setSelectedCampuses)}
-                              className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all ${selectedCampuses.includes(campus) ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-500 border-slate-200'}`}
+                              className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all ${selectedCampuses.includes(campus) ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-card text-muted-foreground border-border'}`}
                             >
                               {campus}
                             </button>
@@ -216,15 +216,15 @@ const Navbar = () => {
 
                       {/* Branches */}
                       <div>
-                        <label className="flex items-center gap-2 text-[10px] font-black text-slate-900 uppercase tracking-tight mb-2">
-                          <Building2 size={12} className="text-fuchsia-500" /> Branches
+                        <label className="flex items-center gap-2 text-[10px] font-black text-foreground uppercase tracking-tight mb-2">
+                          <Building2 size={12} className="text-icon" /> Branches
                         </label>
                         <div className="flex flex-col gap-1.5">
                           {BRANCHES.map(branch => (
                             <button
                               key={branch}
                               onClick={() => toggleFilter(branch, selectedBranches, setSelectedBranches)}
-                              className={`px-2 py-2 rounded-lg text-[10px] font-bold border text-left transition-all ${selectedBranches.includes(branch) ? 'bg-fuchsia-600 text-white border-fuchsia-600' : 'bg-white text-slate-500 border-slate-200'}`}
+                              className={`px-2 py-2 rounded-lg text-[10px] font-bold border text-left transition-all ${selectedBranches.includes(branch) ? 'bg-indigo-velvet-600 text-white border-indigo-velvet-600' : 'bg-card text-muted-foreground border-border'}`}
                             >
                               {branch}
                             </button>
@@ -235,7 +235,7 @@ const Navbar = () => {
 
                     <button
                       onClick={() => handleSearch({ key: 'Enter' })}
-                      className="w-full mt-4 bg-slate-900 text-white py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
+                      className="w-full mt-4 bg-foreground text-background py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-hover transition-all shadow-lg shadow-primary/20"
                     >
                       Apply Filters
                     </button>
@@ -258,7 +258,7 @@ const Navbar = () => {
 
           {/* Profile - Sleeker & More Integrated */}
           {/* User Profile Dropdown */}
-          <div className="relative pl-4 border-l border-slate-100 ml-2">
+          <div className="relative pl-4 border-l border-border ml-2">
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               className="flex items-center gap-2 group cursor-pointer"
@@ -266,12 +266,12 @@ const Navbar = () => {
               <div className="relative">
                 <img
                   src={getAvatarUrl(user)}
-                  className="w-9 h-9 rounded-xl object-cover ring-2 ring-transparent group-hover:ring-indigo-100 transition-all"
+                  className="w-9 h-9 rounded-xl object-cover ring-2 ring-transparent group-hover:ring-primary/25 transition-all"
                   alt="Profile"
                 />
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-indigo-500 border-2 border-white rounded-full" />
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary border-2 border-card rounded-full" />
               </div>
-              <ChevronDown className={`w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-transform duration-300 ${showProfileMenu ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 text-icon group-hover:text-primary transition-transform duration-300 ${showProfileMenu ? 'rotate-180' : ''}`} />
             </button>
 
             <AnimatePresence>
@@ -281,17 +281,17 @@ const Navbar = () => {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 overflow-hidden"
+                  className="absolute right-0 top-full mt-2 w-48 bg-card rounded-2xl shadow-xl border border-border py-2 z-50 overflow-hidden"
                 >
-                  <div className="px-4 py-3 border-b border-slate-50 mb-1">
-                    <p className="text-sm font-black text-slate-800 truncate">{user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}</p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{user?.role || 'Student'}</p>
+                  <div className="px-4 py-3 border-b border-border mb-1">
+                    <p className="text-sm font-black text-foreground truncate">{user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{user?.role || 'Student'}</p>
                   </div>
 
                   <Link
                     to={`/profile/${user?.id}`}
                     onClick={() => setShowProfileMenu(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors"
+                    className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-bold text-muted-foreground hover:bg-muted hover:text-icon transition-colors"
                   >
                     <User size={16} />
                     My Profile
@@ -302,7 +302,7 @@ const Navbar = () => {
                       logout();
                       setShowProfileMenu(false);
                     }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-bold text-rose-500 hover:bg-rose-50 transition-colors text-left"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-bold text-cayenne-red-500 hover:bg-cayenne-red-500/10 transition-colors text-left"
                   >
                     <LogOut size={16} />
                     Logout
@@ -323,8 +323,8 @@ const TabItem = ({ icon, label, active, onClick }) => (
   <button
     onClick={onClick}
     className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition-all ${active
-      ? 'bg-white text-indigo-600 shadow-sm shadow-slate-200'
-      : 'text-slate-400 hover:text-slate-600'
+      ? 'bg-card text-primary shadow-sm shadow-primary/10 border border-border'
+      : 'text-icon/85 hover:text-primary'
       }`}
   >
     {icon}
@@ -337,12 +337,12 @@ const NavAction = ({ icon, badge, label, hideLabel, onClick }) => (
     onClick={onClick}
     whileHover={{ y: -2 }}
     whileTap={{ scale: 0.9 }}
-    className="p-2.5 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50/50 transition-all relative flex items-center gap-2"
+    className="p-2.5 rounded-xl text-icon hover:text-primary hover:bg-primary/10 transition-all relative flex items-center gap-2"
   >
     {icon}
     {!hideLabel && label && <span className="text-xs font-bold">{label}</span>}
     {badge && (
-      <span className="absolute top-2 right-2 min-w-[14px] h-[14px] bg-rose-500 text-[8px] font-black text-white flex items-center justify-center rounded-full border-2 border-white">
+      <span className="absolute top-2 right-2 min-w-[14px] h-[14px] bg-cayenne-red-500 text-[8px] font-black text-white flex items-center justify-center rounded-full border-2 border-card">
         {badge}
       </span>
     )}

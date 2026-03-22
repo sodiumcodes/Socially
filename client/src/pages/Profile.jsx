@@ -327,13 +327,13 @@ const Profile = () => {
     const isFriend = friendship.status === 'accepted' || isPeer;
 
     if (loading) return (
-        <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center">
-            <div className="w-8 h-8 border-4 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin"></div>
+        <div className="min-h-screen bg-background flex items-center justify-center">
+            <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
         </div>
     );
 
     if (error || !profile) return (
-        <div className="min-h-screen bg-[#F1F5F9] flex flex-col items-center justify-center text-slate-400">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center text-muted-foreground">
             <div className="text-xl font-bold mb-2">User Not Found</div>
             <p className="text-sm">The user you are looking for does not exist.</p>
         </div>
@@ -341,7 +341,7 @@ const Profile = () => {
 
     if (isOwnProfile) {
         return (
-            <div className="bg-[#F1F5F9] min-h-screen text-slate-900">
+            <div className="bg-background min-h-screen text-foreground">
                 <Navbar />
                 <div className="max-w-[1600px] mx-auto flex justify-center pt-4 px-0 lg:px-4 pb-4 gap-4">
                     <Sidebar />
@@ -350,20 +350,20 @@ const Profile = () => {
                     <main className="flex-1 max-w-4xl w-full min-w-0">
 
                         {/* Cover Image & Header Info */}
-                        <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden relative mb-6">
+                        <div className="bg-card rounded-[2rem] shadow-sm border border-border overflow-hidden relative mb-6">
                             {/* Cover */}
-                            <div className="h-48 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 relative">
+                            <div className="h-48 bg-gradient-to-r from-indigo-velvet-600 via-medium-slate-blue-500 to-amber-flame-500 relative">
                                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
                             </div>
 
                             <div className="px-8 pb-8 relative">
                                 {/* Avatar */}
                                 <div className="absolute -top-16 left-8 group/avatar">
-                                    <div className="p-1.5 bg-white rounded-full relative">
+                                    <div className="p-1.5 bg-card rounded-full relative">
                                         <img
                                             src={previewUrl || getAvatarUrl(profile)}
                                             alt={profile.full_name}
-                                            className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md bg-slate-50"
+                                            className="w-32 h-32 rounded-full object-cover border-4 border-background shadow-md bg-muted"
                                         />
 
                                         {/* Overlay Camera Icon for Editing */}
@@ -391,15 +391,15 @@ const Profile = () => {
                                 <div className="flex justify-end pt-4 mb-4 gap-3">
                                     {isEditing ? (
                                         <>
-                                            <button onClick={() => setIsEditing(false)} className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50">
+                                            <button onClick={() => setIsEditing(false)} className="p-2 rounded-xl border border-border text-muted-foreground hover:bg-muted">
                                                 <X size={18} />
                                             </button>
-                                            <button onClick={handleSave} className="px-4 py-2 rounded-xl font-bold text-sm bg-indigo-600 text-white hover:bg-indigo-700 flex items-center gap-2">
+                                            <button onClick={handleSave} className="px-4 py-2 rounded-xl font-bold text-sm btn-cta flex items-center gap-2">
                                                 <Check size={16} /> Save
                                             </button>
                                         </>
                                     ) : (
-                                        <button onClick={() => setIsEditing(true)} className="px-5 py-2 rounded-xl font-bold text-sm border-2 border-slate-100 text-slate-600 hover:border-slate-300 transition-colors flex items-center gap-2">
+                                        <button onClick={() => setIsEditing(true)} className="px-5 py-2 rounded-xl font-bold text-sm border-2 border-border text-muted-foreground hover:border-primary/40 transition-colors flex items-center gap-2">
                                             <Edit3 size={16} /> Edit Profile
                                         </button>
                                     )}
@@ -408,9 +408,9 @@ const Profile = () => {
                                 {/* User Info */}
                                 <div className="mt-4">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <h1 className="text-2xl font-black text-slate-900">{profile.full_name}</h1>
-                                        <ShieldCheck className="w-5 h-5 text-indigo-500" />
-                                        <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-wider border border-indigo-100">
+                                        <h1 className="text-2xl font-black text-foreground">{profile.full_name}</h1>
+                                        <ShieldCheck className="w-5 h-5 text-icon" />
+                                        <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-black uppercase tracking-wider border border-primary/20">
                                             STUDENT
                                         </span>
                                     </div>
@@ -419,9 +419,9 @@ const Profile = () => {
                                         <div className="space-y-4 max-w-lg mb-6">
                                             {/* Batch, Campus, and Branch are set during registration and cannot be changed */}
                                             <div>
-                                                <label className="text-xs font-bold text-slate-400 uppercase">Bio</label>
+                                                <label className="text-xs font-bold text-muted-foreground uppercase">Bio</label>
                                                 <textarea
-                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-medium focus:outline-none focus:border-indigo-500 min-h-[80px]"
+                                                    className="w-full bg-muted border border-border rounded-xl px-4 py-2 text-sm font-medium text-foreground focus:outline-none focus:border-primary min-h-[80px]"
                                                     value={editForm.bio}
                                                     onChange={e => setEditForm({ ...editForm, bio: e.target.value })}
                                                     placeholder="Tell us about yourself..."
@@ -429,12 +429,12 @@ const Profile = () => {
                                             </div>
                                         </div>
                                     ) : (
-                                        <p className="text-slate-500 font-medium mb-4 max-w-2xl">
+                                        <p className="text-muted-foreground font-medium mb-4 max-w-2xl">
                                             {profile.bio || "No bio yet."}
                                         </p>
                                     )}
 
-                                    <div className="flex flex-wrap items-center gap-6 text-slate-400 text-sm font-medium">
+                                    <div className="flex flex-wrap items-center gap-6 text-muted-foreground text-sm font-medium">
                                         <div className="flex items-center gap-1.5">
                                             <MapPin className="w-4 h-4" />
                                             <span>{profile.campus || 'Campus Not Set'}</span>
@@ -456,18 +456,18 @@ const Profile = () => {
                                 </div>
 
                                 {/* Stats */}
-                                <div className="flex items-center gap-8 mt-8 border-t border-slate-100 pt-6">
+                                <div className="flex items-center gap-8 mt-8 border-t border-border pt-6">
                                     <div className="text-center">
-                                        <div className="text-xl font-black text-slate-900">{posts.length}</div>
-                                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Posts</div>
+                                        <div className="text-xl font-black text-foreground">{posts.length}</div>
+                                        <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Posts</div>
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-xl font-black text-slate-900">0</div>
-                                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Followers</div>
+                                        <div className="text-xl font-black text-foreground">0</div>
+                                        <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Followers</div>
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-xl font-black text-slate-900">0</div>
-                                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Following</div>
+                                        <div className="text-xl font-black text-foreground">0</div>
+                                        <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Following</div>
                                     </div>
                                 </div>
                             </div>
@@ -487,12 +487,12 @@ const Profile = () => {
                                 ))}
                             </div>
                         ) : (
-                            <div className="bg-white p-12 rounded-[2rem] border border-slate-100 text-center">
-                                <div className="inline-flex p-4 rounded-full bg-slate-50 mb-4 text-slate-300">
+                            <div className="bg-card p-12 rounded-[2rem] border border-border text-center">
+                                <div className="inline-flex p-4 rounded-full bg-muted mb-4 text-muted-foreground">
                                     <Calendar className="w-8 h-8" />
                                 </div>
-                                <h3 className="text-lg font-bold text-slate-900 mb-1">No posts yet</h3>
-                                <p className="text-slate-400 text-sm">When {profile.full_name} posts, you'll see it here.</p>
+                                <h3 className="text-lg font-bold text-foreground mb-1">No posts yet</h3>
+                                <p className="text-muted-foreground text-sm">When {profile.full_name} posts, you'll see it here.</p>
                             </div>
                         )}
                     </main>
@@ -503,7 +503,7 @@ const Profile = () => {
 
     // CONDITIONAL VIEWS FOR OTHER USERS
     return (
-        <div className="bg-[#F1F5F9] min-h-screen text-slate-900">
+        <div className="bg-background min-h-screen text-foreground">
             <Navbar />
             <div className="max-w-[1600px] mx-auto flex justify-center pt-4 px-0 lg:px-4 pb-4 gap-4">
                 <Sidebar />
@@ -531,9 +531,9 @@ const Profile = () => {
                     )}
                 </main>
                 <div className="hidden xl:block w-80 shrink-0">
-                    <div className="sticky top-20 bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
-                        <h3 className="font-black text-slate-900 mb-4">Suggested People</h3>
-                        <p className="text-xs text-slate-400 font-medium">Implement suggestions here...</p>
+                    <div className="sticky top-20 bg-card rounded-3xl p-6 border border-border shadow-sm">
+                        <h3 className="font-black text-foreground mb-4">Suggested People</h3>
+                        <p className="text-xs text-muted-foreground font-medium">Implement suggestions here...</p>
                     </div>
                 </div>
             </div>

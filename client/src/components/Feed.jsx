@@ -33,7 +33,7 @@ const Feed = () => {
   ];
 
   return (
-    <div className="flex-1 max-w-[640px] mx-auto px-4 py-6 h-screen overflow-y-auto no-scrollbar bg-[#F8FAFC]">
+    <div className="flex-1 max-w-[640px] mx-auto px-4 py-6 h-screen overflow-y-auto no-scrollbar bg-background">
 
       {/* 1. Refined Circular Stories */}
       <div className="flex gap-4 mb-8 overflow-x-auto no-scrollbar py-2">
@@ -45,19 +45,19 @@ const Feed = () => {
             className="flex flex-col items-center gap-2 shrink-0 cursor-pointer group"
           >
             <div className="relative">
-              <div className={`p-[2.5px] rounded-full transition-transform duration-500 group-hover:rotate-45 ${story.isUser ? 'bg-slate-200' : 'bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500'
+              <div className={`p-[2.5px] rounded-full transition-transform duration-500 group-hover:rotate-45 ${story.isUser ? 'bg-muted' : 'bg-gradient-to-tr from-medium-slate-blue-500 via-indigo-velvet-600 to-amber-flame-500'
                 }`}>
-                <div className="p-[2px] bg-white rounded-full">
+                <div className="p-[2px] bg-card rounded-full">
                   <img src={story.img} className="w-14 h-14 rounded-full object-cover group-hover:scale-105 transition-transform" alt="" />
                 </div>
               </div>
               {story.isUser && (
-                <div className="absolute bottom-0 right-0 bg-indigo-600 rounded-full p-1 border-2 border-white shadow-sm">
+                <div className="absolute bottom-0 right-0 bg-primary rounded-full p-1 border-2 border-background shadow-sm">
                   <Plus className="text-white w-2.5 h-2.5" strokeWidth={3} />
                 </div>
               )}
             </div>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter group-hover:text-indigo-600 transition-colors">
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-tighter group-hover:text-primary transition-colors">
               {story.name.split(' ')[0]}
             </span>
           </motion.div>
@@ -67,16 +67,16 @@ const Feed = () => {
       {/* 2. Integrated Post Creator */}
       <div
         onClick={openCreatePost}
-        className="bg-white rounded-[2rem] p-4 shadow-sm border border-slate-100 mb-6 group cursor-pointer hover:shadow-md transition-all"
+        className="bg-card rounded-[2rem] p-4 shadow-sm border border-border mb-6 group cursor-pointer hover:shadow-md transition-all"
       >
         <div className="flex gap-4 items-center">
           <img src={getAvatarUrl(user)} className="w-10 h-10 rounded-full object-cover" alt="" />
-          <div className="flex-1 bg-transparent border-none text-sm font-medium text-slate-400">
+          <div className="flex-1 bg-transparent border-none text-sm font-medium text-muted-foreground">
             Share an update...
           </div>
           <div className="flex gap-1">
-            <button className="p-2.5 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-full transition-all"><Image size={18} /></button>
-            <button className="p-2.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-all"><Smile size={18} /></button>
+            <button className="p-2.5 text-icon hover:text-primary hover:bg-primary/10 rounded-full transition-all"><Image size={18} /></button>
+            <button className="p-2.5 text-muted-foreground hover:text-tiger-orange-500 hover:bg-tiger-orange-500/10 rounded-full transition-all"><Smile size={18} /></button>
           </div>
         </div>
       </div>
@@ -100,18 +100,18 @@ const Feed = () => {
         {reportPostId && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-slate-900/30 backdrop-blur-sm"
+            className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-background/70 backdrop-blur-sm"
           >
             <motion.div
               initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 10 }}
-              className="bg-white/95 backdrop-blur-2xl rounded-[2.5rem] w-full max-w-[340px] p-8 shadow-2xl border border-white"
+              className="bg-card/95 backdrop-blur-2xl rounded-[2.5rem] w-full max-w-[340px] p-8 shadow-2xl border border-border"
             >
               <div className="text-center">
-                <div className="w-14 h-14 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-rose-500">
+                <div className="w-14 h-14 bg-cayenne-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-cayenne-red-500">
                   <AlertTriangle size={28} />
                 </div>
-                <h3 className="text-base font-black text-slate-900 mb-1">Report Content</h3>
-                <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-6">Select Reason</p>
+                <h3 className="text-base font-black text-foreground mb-1">Report Content</h3>
+                <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider mb-6">Select Reason</p>
 
                 <div className="space-y-2 mb-8">
                   {['Inappropriate Content', 'Spam', 'Harassment', 'Other'].map(reason => (
@@ -119,8 +119,8 @@ const Feed = () => {
                       key={reason}
                       onClick={() => setReportReason(reason)}
                       className={`w-full py-3.5 rounded-2xl border text-xs font-bold transition-all ${reportReason === reason
-                          ? 'bg-rose-50 border-rose-100 text-rose-600 shadow-inner'
-                          : 'border-slate-100 text-slate-600 hover:bg-white hover:shadow-md hover:border-transparent'
+                          ? 'bg-cayenne-red-500/10 border-cayenne-red-500/20 text-cayenne-red-500 shadow-inner'
+                          : 'border-border text-muted-foreground hover:bg-muted hover:shadow-md hover:border-transparent'
                         }`}
                     >
                       {reason}
@@ -129,11 +129,11 @@ const Feed = () => {
                 </div>
 
                 <div className="flex gap-3">
-                  <button onClick={() => setReportPostId(null)} className="flex-1 text-[11px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600">Cancel</button>
+                  <button onClick={() => setReportPostId(null)} className="flex-1 text-[11px] font-black text-muted-foreground uppercase tracking-widest hover:text-foreground">Cancel</button>
                   <button
                     onClick={handleReportSubmit}
                     disabled={!reportReason}
-                    className={`flex-1 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-xl shadow-slate-200 ${reportReason ? 'bg-slate-900 text-white hover:bg-rose-600' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    className={`flex-1 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-xl ${reportReason ? 'bg-foreground text-background hover:bg-cayenne-red-500' : 'bg-muted text-muted-foreground cursor-not-allowed'
                       }`}
                   >Submit</button>
                 </div>
