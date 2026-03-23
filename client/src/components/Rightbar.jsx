@@ -9,7 +9,9 @@ import { useNavigate } from 'react-router-dom';
 const Rightbar = () => {
   const navigate = useNavigate();
   const [trendingHashtags, setTrendingHashtags] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     const fetchTrending = async () => {
@@ -39,7 +41,6 @@ const Rightbar = () => {
         const sorted = Object.entries(counts)
           .map(([tag, count]) => ({ tag, postsCount: count }))
           .sort((a, b) => b.postsCount - a.postsCount)
-          .slice(0, 5)
           .map((item, i) => ({
             tag: item.tag,
             posts: item.postsCount > 999 ? (item.postsCount / 1000).toFixed(1) + 'k' : item.postsCount.toString(),
@@ -55,12 +56,29 @@ const Rightbar = () => {
       }
     };
 
+    const fetchEvents = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('events')
+          .select('*')
+          .order('event_date', { ascending: true })
+          .limit(3);
+        if (error) throw error;
+        setEvents(data || []);
+      } catch (err) {
+        console.error('Events fetch error:', err);
+      }
+    };
+
     fetchTrending();
+    fetchEvents();
   }, []);
 
   const handleHashtagClick = (tag) => {
     navigate(`/search?q=%23${tag}`);
   };
+
+  const displayedHashtags = showAll ? trendingHashtags : trendingHashtags.slice(0, 5);
 
   return (
     /* FIX: Isolated Scroll 
@@ -83,8 +101,8 @@ const Rightbar = () => {
               <div className="flex justify-center py-4">
                 <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
               </div>
-            ) : trendingHashtags.length > 0 ? (
-              trendingHashtags.map((item, i) => (
+            ) : displayedHashtags.length > 0 ? (
+              displayedHashtags.map((item, i) => (
                 <motion.div 
                   key={i}
                   whileHover={{ x: 5 }}
@@ -109,9 +127,14 @@ const Rightbar = () => {
             )}
           </div>
 
-          <button className="w-full mt-6 py-3.5 text-[10px] font-black text-muted-foreground uppercase tracking-widest border border-border hover:border-primary/40 hover:text-primary rounded-2xl transition-all">
-            Show More
-          </button>
+          {trendingHashtags.length > 5 && (
+            <button 
+              onClick={() => setShowAll(!showAll)}
+              className="w-full mt-6 py-3.5 text-[10px] font-black text-muted-foreground uppercase tracking-widest border border-border hover:border-primary/40 hover:text-primary rounded-2xl transition-all"
+            >
+              {showAll ? 'Show Less' : 'Show More'}
+            </button>
+          )}
         </div>
       </section>
 
@@ -124,27 +147,9 @@ const Rightbar = () => {
         </div>
 
         <div className="space-y-3">
-          <EventCard 
-            title="UI Design Workshop"
-            time="4:00 PM"
-            location="Auditorium A"
-            image="https://images.unsplash.com/photo-1552664730-d307ca884978?w=100"
-            date="24 Jan"
-          />
-          <EventCard 
-            title="Tech Stack Meetup"
-            time="10:30 AM"
-            location="Block 4 Lab"
-            image="https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=100"
-            date="26 Jan"
-          />
-          <EventCard 
-            title="Career Fair 2026"
-            time="9:00 AM"
-            location="Main Hall"
-            image="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100"
-            date="02 Feb"
-          />
+          {events.map(event => (
+            <EventCard key={event.id} event={event} />
+          ))}
         </div>
       </section>
 
@@ -164,31 +169,35 @@ const Rightbar = () => {
 
 /* --- Refined Internal Components --- */
 
-const EventCard = ({ title, time, location, image, date }) => (
-  <motion.div 
-    whileHover={{ scale: 1.02 }}
-    whileTap={{ scale: 0.98 }}
-    className="bg-card p-4 rounded-[2.2rem] border border-border shadow-sm hover:shadow-md transition-all flex items-center gap-4 cursor-pointer"
-  >
-    <div className="relative shrink-0">
-      <img src={image} className="w-12 h-12 rounded-2xl object-cover ring-2 ring-border" alt="" />
-      <div className="absolute -top-2 -left-2 bg-primary text-[8px] font-black text-primary-foreground px-2 py-1 rounded-lg shadow-lg">
-        {date}
+const EventCard = ({ event }) => {
+  const navigate = useNavigate();
+  return (
+    <motion.div 
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={() => navigate(`/events`)}
+      className="bg-card p-4 rounded-[2.2rem] border border-border shadow-sm hover:shadow-md transition-all flex items-center gap-4 cursor-pointer"
+    >
+      <div className="relative shrink-0">
+        <img src={event.image_url || `https://picsum.photos/seed/${event.id}/100`} className="w-12 h-12 rounded-2xl object-cover ring-2 ring-border" alt="" />
+        <div className="absolute -top-2 -left-2 bg-primary text-[8px] font-black text-primary-foreground px-2 py-1 rounded-lg shadow-lg">
+          {new Date(event.event_date).toLocaleDateString('en-US', { day: '2-digit', month: 'short' })}
+        </div>
       </div>
-    </div>
-    
-    <div className="flex-1 min-w-0">
-      <h4 className="text-[12px] font-black text-foreground truncate mb-1">{title}</h4>
-      <div className="flex flex-col gap-0.5">
-        <p className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 uppercase">
-          <Clock size={10} className="text-icon" /> {time}
-        </p>
-        <p className="text-[10px] font-medium text-muted-foreground truncate flex items-center gap-1">
-          <MapPin size={10} /> {location}
-        </p>
+      
+      <div className="flex-1 min-w-0">
+        <h4 className="text-[12px] font-black text-foreground truncate mb-1">{event.title}</h4>
+        <div className="flex flex-col gap-0.5">
+          <p className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 uppercase">
+            <Clock size={10} className="text-icon" /> {event.event_time.slice(0, 5)}
+          </p>
+          <p className="text-[10px] font-medium text-muted-foreground truncate flex items-center gap-1">
+            <MapPin size={10} /> {event.location}
+          </p>
+        </div>
       </div>
-    </div>
-  </motion.div>
-);
+    </motion.div>
+  );
+};
 
 export default Rightbar;
