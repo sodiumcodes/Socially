@@ -22,6 +22,7 @@ const allowedOrigins = [
     "http://localhost:5173",
     "https://socially-jet-two.vercel.app"
 ]
+
 app.use(cors({
     origin: allowedOrigins,
     credentials: true
