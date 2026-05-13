@@ -18,7 +18,15 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://socially-jet-two.vercel.app"
+]
+
+app.use(cors({
+    origin: allowedOrigins,
+    credentials: true
+}))
 app.use(express.json());
 
 // Serve static files from uploads directory
