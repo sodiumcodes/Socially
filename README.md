@@ -1,7 +1,7 @@
 # Socially - Project Documentation
 
 ## 1. Project Overview
-**Socially** is a campus-centric social media platform designed to connect students across different campuses, batches, and branches. It features a rich user interface, secure authentication, and robust features like targeted posts, feed filtering, and interactive engagement (likes, comments).
+**Socially** is a campus-centric social media platform designed to connect students across different campuses, batches, and branches. It features a rich user interface, secure authentication, and robust features like targeted posts, feed filtering, and interactive engagement (likes, comments). Frontend deployed- Vercel and Backend deployed - Render.
 
 ---
 
